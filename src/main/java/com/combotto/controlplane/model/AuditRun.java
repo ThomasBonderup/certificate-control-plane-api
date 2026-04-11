@@ -1,4 +1,4 @@
-package com.combotto.control-plane.model;
+package com.combotto.controlplane.model;
 
 public record AuditRun(
     long id,
