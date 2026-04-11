@@ -14,4 +14,4 @@ create table certificates {
   notes text,
   created_at timestamptz not null,
   updated_at timestamptz not null
-}
+};
