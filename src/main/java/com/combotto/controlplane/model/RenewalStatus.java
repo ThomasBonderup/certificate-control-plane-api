@@ -1,6 +1,6 @@
 package com.combotto.controlplane.model;
 
-enum RenewalStatus {
+public enum RenewalStatus {
   NOT_STATUS,
   PLANNED,
   IN_PROGRESS,
