@@ -1,6 +1,6 @@
 package com.combotto.controlplane.model;
 
-enum CertificateStatus {
+public enum CertificateStatus {
   ACTIVE,
   EXPIRING_SOON,
   EXPIRED,
