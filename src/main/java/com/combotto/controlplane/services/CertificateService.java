@@ -3,10 +3,10 @@ package com.combotto.controlplane.services;
 import com.combotto.controlplane.api.CertificateResponse;
 import com.combotto.controlplane.api.CreateCertificateRequest;
 import com.combotto.controlplane.api.UpdateCertificateRequest;
+import com.combotto.controlplane.common.ResourceNotFoundException;
 import com.combotto.controlplane.model.CertificateEntity;
 import com.combotto.controlplane.repositories.CertificateRepository;
 
-import org.apache.kafka.common.errors.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
