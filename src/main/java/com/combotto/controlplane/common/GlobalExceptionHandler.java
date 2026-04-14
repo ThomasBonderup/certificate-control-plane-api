@@ -1,6 +1,8 @@
 package com.combotto.controlplane.common;
 
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -16,7 +18,7 @@ public class GlobalExceptionHandler {
   @ResponseStatus(HttpStatus.NOT_FOUND)
   public ApiError handleNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
     return new ApiError(
-        OffsetDateTime.now(),
+        OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS),
         404,
         "Not Found",
         ex.getMessage(),
@@ -27,7 +29,7 @@ public class GlobalExceptionHandler {
   @ResponseStatus(HttpStatus.BAD_REQUEST)
   public ApiError handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
     return new ApiError(
-        OffsetDateTime.now(),
+        OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS),
         400,
         "Bad Request",
         "Validation failed",
