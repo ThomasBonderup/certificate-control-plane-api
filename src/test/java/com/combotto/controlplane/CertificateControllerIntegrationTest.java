@@ -1,5 +1,6 @@
 package com.combotto.controlplane;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +27,9 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import com.combotto.controlplane.api.CreateCertificateRequest;
+import com.combotto.controlplane.model.CertificateStatus;
+import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
 
 @Testcontainers(disabledWithoutDocker = true)
@@ -59,26 +63,9 @@ class CertificateControllerIntegrationTest {
 
   @Test
   void create_returns201_location_body_and_persistsCertificate() throws Exception {
-    String requestBody = """
-        {
-          "tenantId": "demo-tenant",
-          "name": "Broker TLS Certificate",
-          "commonName": "mqtt.example.com",
-          "issuer": "Let's Encrypt",
-          "serialNumber": "123456789",
-          "sha256Fingerprint": "AB:CD:EF:12:34",
-          "notBefore": "2026-04-01T00:00:00Z",
-          "notAfter": "2026-07-01T00:00:00Z",
-          "status": "ACTIVE",
-          "renewalStatus": "NOT_STATUS",
-          "owner": "thomas",
-          "notes": "first certificate"
-        }
-        """;
-
     String responseBody = mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(requestBody))
+        .content(validCreateRequestJson()))
         .andExpect(status().isCreated())
         .andExpect(header().string("Location", org.hamcrest.Matchers.matchesPattern(".*/api/certificates/.*")))
         .andExpect(jsonPath("$.tenantId").value("demo-tenant"))
@@ -128,34 +115,7 @@ class CertificateControllerIntegrationTest {
 
   @Test
   void getById_returns200_andBody() throws Exception {
-    String requestBody = """
-        {
-          "tenantId": "demo-tenant",
-          "name": "Broker TLS Certificate",
-          "commonName": "mqtt.example.com",
-          "issuer": "Let's Encrypt",
-          "serialNumber": "123456789",
-          "sha256Fingerprint": "AB:CD:EF:12:34",
-          "notBefore": "2026-04-01T00:00:00Z",
-          "notAfter": "2026-07-01T00:00:00Z",
-          "status": "ACTIVE",
-          "renewalStatus": "NOT_STATUS",
-          "owner": "thomas",
-          "notes": "first certificate"
-        }
-        """;
-
-    String responseBody = mockMvc.perform(post("/api/certificates")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(requestBody))
-        .andExpect(status().isCreated())
-        .andExpect(header().string("Location", org.hamcrest.Matchers.matchesPattern(".*/api/certificates/.*")))
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode body = objectMapper.readTree(responseBody);
-    UUID id = UUID.fromString(body.get("id").asString());
+    UUID id = createCertificateAndReturnId();
 
     mockMvc.perform(get("/api/certificates/{id}", id))
         .andExpect(status().isOk())
@@ -184,48 +144,25 @@ class CertificateControllerIntegrationTest {
 
   @Test
   void list_returns200_andAllCertificates() throws Exception {
-    String firstRequest = """
-        {
-          "tenantId": "demo-tenant",
-          "name": "Broker TLS Certificate",
-          "commonName": "mqtt.example.com",
-          "issuer": "Let's Encrypt",
-          "serialNumber": "123456789",
-          "sha256Fingerprint": "AB:CD:EF:12:34",
-          "notBefore": "2026-04-01T00:00:00Z",
-          "notAfter": "2026-07-01T00:00:00Z",
-          "status": "ACTIVE",
-          "renewalStatus": "NOT_STATUS",
-          "owner": "thomas",
-          "notes": "first certificate"
-        }
-        """;
-
-    String secondRequest = """
-        {
-          "tenantId": "demo-tenant",
-          "name": "Gateway Client Certificate",
-          "commonName": "gateway.example.com",
-          "issuer": "Combotto CA",
-          "serialNumber": "987654321",
-          "sha256Fingerprint": "12:34:56:78:90",
-          "notBefore": "2026-05-01T00:00:00Z",
-          "notAfter": "2026-08-01T00:00:00Z",
-          "status": "EXPIRING_SOON",
-          "renewalStatus": "PLANNED",
-          "owner": "platform-team",
-          "notes": "second certificate"
-        }
-        """;
-
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(firstRequest))
+        .content(validCreateRequestJson()))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(secondRequest))
+        .content(objectMapper.writeValueAsString(validCreateRequest(
+            "Gateway Client Certificate",
+            "gateway.example.com",
+            "Combotto CA",
+            "987654321",
+            "12:34:56:78:90",
+            OffsetDateTime.parse("2026-05-01T00:00:00Z"),
+            OffsetDateTime.parse("2026-08-01T00:00:00Z"),
+            CertificateStatus.EXPIRING_SOON,
+            RenewalStatus.PLANNED,
+            "platform-team",
+            "second certificate"))))
         .andExpect(status().isCreated());
 
     mockMvc.perform(get("/api/certificates"))
@@ -243,33 +180,7 @@ class CertificateControllerIntegrationTest {
 
   @Test
   void update_returns200_andUpdatedCertificate() throws Exception {
-    String createRequest = """
-        {
-          "tenantId": "demo-tenant",
-          "name": "Broker TLS Certificate",
-          "commonName": "mqtt.example.com",
-          "issuer": "Let's Encrypt",
-          "serialNumber": "123456789",
-          "sha256Fingerprint": "AB:CD:EF:12:34",
-          "notBefore": "2026-04-01T00:00:00Z",
-          "notAfter": "2026-07-01T00:00:00Z",
-          "status": "ACTIVE",
-          "renewalStatus": "NOT_STATUS",
-          "owner": "thomas",
-          "notes": "first certificate"
-        }
-        """;
-
-    String createResponse = mockMvc.perform(post("/api/certificates")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(createRequest))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode created = objectMapper.readTree(createResponse);
-    UUID id = UUID.fromString(created.get("id").asString());
+    UUID id = createCertificateAndReturnId();
 
     String updateRequest = """
         {
@@ -300,37 +211,70 @@ class CertificateControllerIntegrationTest {
 
   @Test
   void delete_returns204_andRemovesCertificate() throws Exception {
-    String createRequest = """
-        {
-          "tenantId": "demo-tenant",
-          "name": "Broker TLS Certificate",
-          "commonName": "mqtt.example.com",
-          "issuer": "Let's Encrypt",
-          "serialNumber": "123456789",
-          "sha256Fingerprint": "AB:CD:EF:12:34",
-          "notBefore": "2026-04-01T00:00:00Z",
-          "notAfter": "2026-07-01T00:00:00Z",
-          "status": "ACTIVE",
-          "renewalStatus": "NOT_STATUS",
-          "owner": "thomas",
-          "notes": "first certificate"
-        }
-        """;
-
-    String createResponse = mockMvc.perform(post("/api/certificates")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(createRequest))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode created = objectMapper.readTree(createResponse);
-    UUID id = UUID.fromString(created.get("id").asString());
+    UUID id = createCertificateAndReturnId();
 
     mockMvc.perform(delete("/api/certificates/{id}", id))
         .andExpect(status().isNoContent());
 
     assertThat(certificateRepository.existsById(id)).isFalse();
+  }
+
+  private CreateCertificateRequest validCreateRequest() {
+    return validCreateRequest(
+        "Broker TLS Certificate",
+        "mqtt.example.com",
+        "Let's Encrypt",
+        "123456789",
+        "AB:CD:EF:12:34",
+        OffsetDateTime.parse("2026-04-01T00:00:00Z"),
+        OffsetDateTime.parse("2026-07-01T00:00:00Z"),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "first certificate");
+  }
+
+  private CreateCertificateRequest validCreateRequest(
+      String name,
+      String commonName,
+      String issuer,
+      String serialNumber,
+      String sha256Fingerprint,
+      OffsetDateTime notBefore,
+      OffsetDateTime notAfter,
+      CertificateStatus status,
+      RenewalStatus renewalStatus,
+      String owner,
+      String notes) {
+    return new CreateCertificateRequest(
+        "demo-tenant",
+        name,
+        commonName,
+        issuer,
+        serialNumber,
+        sha256Fingerprint,
+        notBefore,
+        notAfter,
+        status,
+        renewalStatus,
+        owner,
+        notes);
+  }
+
+  private String validCreateRequestJson() throws Exception {
+    return objectMapper.writeValueAsString(validCreateRequest());
+  }
+
+  private UUID createCertificateAndReturnId() throws Exception {
+    String responseBody = mockMvc.perform(post("/api/certificates")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(validCreateRequestJson()))
+        .andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    JsonNode body = objectMapper.readTree(responseBody);
+    return UUID.fromString(body.get("id").asString());
   }
 }
