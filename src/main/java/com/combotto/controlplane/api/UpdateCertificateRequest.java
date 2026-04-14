@@ -5,7 +5,7 @@ import com.combotto.controlplane.model.RenewalStatus;
 
 import java.time.OffsetDateTime;
 
-record UpdateCertificateRequest(
+public record UpdateCertificateRequest(
   String name,
   String commonName,
   String issuer,
