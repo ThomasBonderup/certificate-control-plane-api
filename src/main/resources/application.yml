@@ -28,3 +28,28 @@ spring:
       properties:
         spring.json.trusted.packages: "com.combotto.controlplane.*"
         spring.json.value.default.type: com.combotto.controlplane.model.EvidenceEnvelope
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/combotto_control_plane
+    username: combotto
+    password: combotto
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:migration
+
+  jackson:
+    datatype:
+      datetime:
+        WRITE_DATES_AS_TIMESTAMPS: false
+
+server:
+  port: 8080
