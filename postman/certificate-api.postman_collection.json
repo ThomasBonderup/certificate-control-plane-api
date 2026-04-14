@@ -1,0 +1,201 @@
+{
+  "info": {
+    "_postman_id": "d4c6d9f8-2f8d-4dbe-9d7f-2f6df05f4c25",
+    "name": "Combotto Control Plane Certificate API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Manual API checks for the certificate endpoints in the Combotto Control Plane service."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "certificateId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Create Certificate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tenantId\": \"demo-tenant\",\n  \"name\": \"Broker TLS Certificate\",\n  \"commonName\": \"mqtt.example.com\",\n  \"issuer\": \"Let's Encrypt\",\n  \"serialNumber\": \"123456789\",\n  \"sha256Fingerprint\": \"AB:CD:EF:12:34\",\n  \"notBefore\": \"2026-04-01T00:00:00Z\",\n  \"notAfter\": \"2026-07-01T00:00:00Z\",\n  \"status\": \"ACTIVE\",\n  \"renewalStatus\": \"NOT_STATUS\",\n  \"owner\": \"thomas\",\n  \"notes\": \"Primary broker certificate\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/certificates",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "certificates"
+          ]
+        },
+        "description": "Creates a certificate and stores the returned id into the collection variable `certificateId`."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 201\", function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "var body = pm.response.json();",
+              "if (body && body.id) {",
+              "  pm.collectionVariables.set(\"certificateId\", body.id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Certificates",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/certificates",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "certificates"
+          ]
+        },
+        "description": "Returns all certificates."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Certificate By Id",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/certificates/{{certificateId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "certificates",
+            "{{certificateId}}"
+          ]
+        },
+        "description": "Fetches a certificate by id. Run `Create Certificate` first or set `certificateId` manually."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Update Certificate",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Updated Broker TLS Certificate\",\n  \"status\": \"EXPIRING_SOON\",\n  \"renewalStatus\": \"PLANNED\",\n  \"owner\": \"platform-team\",\n  \"notes\": \"Updated through Postman\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/certificates/{{certificateId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "certificates",
+            "{{certificateId}}"
+          ]
+        },
+        "description": "Partially updates a certificate. Run `Create Certificate` first or set `certificateId` manually."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Delete Certificate",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/certificates/{{certificateId}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "certificates",
+            "{{certificateId}}"
+          ]
+        },
+        "description": "Deletes a certificate. Run `Create Certificate` first or set `certificateId` manually."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 204\", function () {",
+              "  pm.response.to.have.status(204);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
