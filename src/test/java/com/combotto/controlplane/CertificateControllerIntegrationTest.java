@@ -1,5 +1,6 @@
 package com.combotto.controlplane;
 
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -12,7 +13,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -23,6 +27,9 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import com.combotto.controlplane.api.CreateCertificateRequest;
+import com.combotto.controlplane.model.CertificateStatus;
+import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
 
 @Testcontainers(disabledWithoutDocker = true)
@@ -56,26 +63,9 @@ class CertificateControllerIntegrationTest {
 
   @Test
   void create_returns201_location_body_and_persistsCertificate() throws Exception {
-    String requestBody = """
-        {
-          "tenantId": "demo-tenant",
-          "name": "Broker TLS Certificate",
-          "commonName": "mqtt.example.com",
-          "issuer": "Let's Encrypt",
-          "serialNumber": "123456789",
-          "sha256Fingerprint": "AB:CD:EF:12:34",
-          "notBefore": "2026-04-01T00:00:00Z",
-          "notAfter": "2026-07-01T00:00:00Z",
-          "status": "ACTIVE",
-          "renewalStatus": "NOT_STATUS",
-          "owner": "thomas",
-          "notes": "first certificate"
-        }
-        """;
-
     String responseBody = mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(requestBody))
+        .content(validCreateRequestJson()))
         .andExpect(status().isCreated())
         .andExpect(header().string("Location", org.hamcrest.Matchers.matchesPattern(".*/api/certificates/.*")))
         .andExpect(jsonPath("$.tenantId").value("demo-tenant"))
@@ -94,5 +84,197 @@ class CertificateControllerIntegrationTest {
     assertThat(saved.orElseThrow().getTenantId()).isEqualTo("demo-tenant");
     assertThat(saved.orElseThrow().getName()).isEqualTo("Broker TLS Certificate");
     assertThat(saved.orElseThrow().getIssuer()).isEqualTo("Let's Encrypt");
+  }
+
+  @Test
+  void create_returns400_whenTenantIdIsMissing() throws Exception {
+    String requestBody = """
+        {
+          "name": "Broker TLS Certificate",
+          "commonName": "mqtt.example.com",
+          "issuer": "Let's Encrypt",
+          "serialNumber": "123456789",
+          "sha256Fingerprint": "AB:CD:EF:12:34",
+          "notBefore": "2026-04-01T00:00:00Z",
+          "notAfter": "2026-07-01T00:00:00Z",
+          "status": "ACTIVE",
+          "renewalStatus": "NOT_STATUS",
+          "owner": "thomas",
+          "notes": "first certificate"
+        }
+        """;
+
+    mockMvc.perform(post("/api/certificates")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(requestBody))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.error").value("Bad Request"))
+        .andExpect(jsonPath("$.path").value("/api/certificates"));
+  }
+
+  @Test
+  void getById_returns200_andBody() throws Exception {
+    UUID id = createCertificateAndReturnId();
+
+    mockMvc.perform(get("/api/certificates/{id}", id))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(id.toString()))
+        .andExpect(jsonPath("$.tenantId").value("demo-tenant"))
+        .andExpect(jsonPath("$.name").value("Broker TLS Certificate"))
+        .andExpect(jsonPath("$.commonName").value("mqtt.example.com"))
+        .andExpect(jsonPath("$.issuer").value("Let's Encrypt"))
+        .andExpect(jsonPath("$.status").value("ACTIVE"))
+        .andExpect(jsonPath("$.renewalStatus").value("NOT_STATUS"))
+        .andExpect(jsonPath("$.owner").value("thomas"))
+        .andExpect(jsonPath("$.notes").value("first certificate"));
+  }
+
+  @Test
+  void getById_returns404_whenCertificateDoesNotExists() throws Exception {
+    UUID missingId = UUID.randomUUID();
+
+    mockMvc.perform(get("/api/certificates/{id}", missingId))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.status").value(404))
+        .andExpect(jsonPath("$.error").value("Not Found"))
+        .andExpect(jsonPath("$.message").value("Certificate not found: " + missingId))
+        .andExpect(jsonPath("$.path").value("/api/certificates/" + missingId));
+  }
+
+  @Test
+  void list_returns200_andAllCertificates() throws Exception {
+    mockMvc.perform(post("/api/certificates")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(validCreateRequestJson()))
+        .andExpect(status().isCreated());
+
+    mockMvc.perform(post("/api/certificates")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(validCreateRequest(
+            "Gateway Client Certificate",
+            "gateway.example.com",
+            "Combotto CA",
+            "987654321",
+            "12:34:56:78:90",
+            OffsetDateTime.parse("2026-05-01T00:00:00Z"),
+            OffsetDateTime.parse("2026-08-01T00:00:00Z"),
+            CertificateStatus.EXPIRING_SOON,
+            RenewalStatus.PLANNED,
+            "platform-team",
+            "second certificate"))))
+        .andExpect(status().isCreated());
+
+    mockMvc.perform(get("/api/certificates"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[*].name",
+            org.hamcrest.Matchers.containsInAnyOrder(
+                "Broker TLS Certificate",
+                "Gateway Client Certificate")))
+        .andExpect(jsonPath("$[*].status",
+            org.hamcrest.Matchers.containsInAnyOrder(
+                "ACTIVE",
+                "EXPIRING_SOON")));
+  }
+
+  @Test
+  void update_returns200_andUpdatedCertificate() throws Exception {
+    UUID id = createCertificateAndReturnId();
+
+    String updateRequest = """
+        {
+          "name": "Updated Broker TLS Certificate",
+          "status": "EXPIRING_SOON",
+          "renewalStatus": "PLANNED",
+          "owner": "platform-team",
+          "notes": "updated certificate"
+        }
+        """;
+
+    mockMvc.perform(patch("/api/certificates/{id}", id)
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(updateRequest))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(id.toString()))
+        .andExpect(jsonPath("$.name").value("Updated Broker TLS Certificate"))
+        .andExpect(jsonPath("$.status").value("EXPIRING_SOON"))
+        .andExpect(jsonPath("$.renewalStatus").value("PLANNED"))
+        .andExpect(jsonPath("$.owner").value("platform-team"))
+        .andExpect(jsonPath("$.notes").value("updated certificate"));
+
+    var saved = certificateRepository.findById(id);
+    assertThat(saved).isPresent();
+    assertThat(saved.orElseThrow().getName()).isEqualTo("Updated Broker TLS Certificate");
+    assertThat(saved.orElseThrow().getOwner()).isEqualTo("platform-team");
+  }
+
+  @Test
+  void delete_returns204_andRemovesCertificate() throws Exception {
+    UUID id = createCertificateAndReturnId();
+
+    mockMvc.perform(delete("/api/certificates/{id}", id))
+        .andExpect(status().isNoContent());
+
+    assertThat(certificateRepository.existsById(id)).isFalse();
+  }
+
+  private CreateCertificateRequest validCreateRequest() {
+    return validCreateRequest(
+        "Broker TLS Certificate",
+        "mqtt.example.com",
+        "Let's Encrypt",
+        "123456789",
+        "AB:CD:EF:12:34",
+        OffsetDateTime.parse("2026-04-01T00:00:00Z"),
+        OffsetDateTime.parse("2026-07-01T00:00:00Z"),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "first certificate");
+  }
+
+  private CreateCertificateRequest validCreateRequest(
+      String name,
+      String commonName,
+      String issuer,
+      String serialNumber,
+      String sha256Fingerprint,
+      OffsetDateTime notBefore,
+      OffsetDateTime notAfter,
+      CertificateStatus status,
+      RenewalStatus renewalStatus,
+      String owner,
+      String notes) {
+    return new CreateCertificateRequest(
+        "demo-tenant",
+        name,
+        commonName,
+        issuer,
+        serialNumber,
+        sha256Fingerprint,
+        notBefore,
+        notAfter,
+        status,
+        renewalStatus,
+        owner,
+        notes);
+  }
+
+  private String validCreateRequestJson() throws Exception {
+    return objectMapper.writeValueAsString(validCreateRequest());
+  }
+
+  private UUID createCertificateAndReturnId() throws Exception {
+    String responseBody = mockMvc.perform(post("/api/certificates")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(validCreateRequestJson()))
+        .andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    JsonNode body = objectMapper.readTree(responseBody);
+    return UUID.fromString(body.get("id").asString());
   }
 }
