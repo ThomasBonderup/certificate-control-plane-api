@@ -44,9 +44,131 @@ public class CertificateEntity {
 
   private String owner;
 
+  private String notes;
+
   @Column(name = "created_at", nullable = false)
   private OffsetDateTime createdAt;
 
   @Column(name = "updated_at", nullable = false)
   private OffsetDateTime updatedAt;
+
+  public UUID getId() {
+    return id;
+  }
+
+  public void setId(UUID id) {
+    this.id = id;
+  }
+
+  public String getTenantId() {
+    return tenantId;
+  }
+
+  public void setTenantId(String tenantId) {
+    this.tenantId = tenantId;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(String name) {
+    this.name = name;
+  }
+
+  public String getCommonName() {
+    return commonName;
+  }
+
+  public void setCommonName(String commonName) {
+    this.commonName = commonName;
+  }
+
+  public String getIssuer() {
+    return issuer;
+  }
+
+  public void setIssuer(String issuer) {
+    this.issuer = issuer;
+  }
+
+  public String getSerialNumber() {
+    return serialNumber;
+  }
+
+  public void setSerialNumber(String serialNumber) {
+    this.serialNumber = serialNumber;
+  }
+
+  public String getSha256Fingerprint() {
+    return sha256Fingerprint;
+  }
+
+  public void setSha256Fingerprint(String sha256Fingerprint) {
+    this.sha256Fingerprint = sha256Fingerprint;
+  }
+
+  public OffsetDateTime getNotBefore() {
+    return notBefore;
+  }
+
+  public void setNotBefore(OffsetDateTime notBefore) {
+    this.notBefore = notBefore;
+  }
+
+  public OffsetDateTime getNotAfter() {
+    return notAfter;
+  }
+
+  public void setNotAfter(OffsetDateTime notAfter) {
+    this.notAfter = notAfter;
+  }
+
+  public CertificateStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(CertificateStatus status) {
+    this.status = status;
+  }
+
+  public RenewalStatus getRenewalStatus() {
+    return renewalStatus;
+  }
+
+  public void setRenewalStatus(RenewalStatus renewalStatus) {
+    this.renewalStatus = renewalStatus;
+  }
+
+  public String getOwner() {
+    return owner;
+  }
+
+  public void setOwner(String owner) {
+    this.owner = owner;
+  }
+
+  public String getNotes() {
+    return notes;
+  }
+
+  public void setNotes(String notes) {
+    this.notes = notes;
+  }
+
+  public OffsetDateTime getCreatedAt() {
+    return createdAt;
+  }
+
+  public void setCreatedAt(OffsetDateTime createdAt) {
+    this.createdAt = createdAt;
+  }
+
+  public OffsetDateTime getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(OffsetDateTime updatedAt) {
+    this.updatedAt = updatedAt;
+  }
 }

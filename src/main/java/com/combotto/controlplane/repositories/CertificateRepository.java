@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.combotto.controlplane.model.CertificateEntity;
 
-interface CertificateRepository extends JpaRepository<CertificateEntity, UUID> {
+public interface CertificateRepository extends JpaRepository<CertificateEntity, UUID> {
   
 }
