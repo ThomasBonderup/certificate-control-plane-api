@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
 import java.util.UUID;
-import java.util.List
+import java.util.List;
 
 @Service
 public class CertificateService {
