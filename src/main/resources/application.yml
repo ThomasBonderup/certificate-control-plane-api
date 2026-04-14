@@ -44,6 +44,7 @@ spring:
 
   flyway:
     enabled: true
+    locations: classpath:migration
 
   jackson:
     datatype:
