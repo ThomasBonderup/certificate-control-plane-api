@@ -41,3 +41,15 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
     depends_on:
       - kafka
+
+  postgres:
+    image: postgres:16
+    container_name: combotto-control-plane-postgres
+    environment:
+      POSTGRES_DB: combotto_control_plane
+      POSTGRES_USER: combotto
+      POSTGRES_PASSWORD: combotto
+    ports:
+      - "5432:5432"
+    volumes:
+      - combotto_control_plane_postgres:/var/lib/postgresql/data
