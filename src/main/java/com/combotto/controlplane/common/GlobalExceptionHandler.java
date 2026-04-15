@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import jakarta.servlet.http.HttpServletRequest;
 
@@ -33,6 +34,17 @@ public class GlobalExceptionHandler {
         400,
         "Bad Request",
         "Validation failed",
+        request.getRequestURI());
+  }
+
+  @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ApiError handleTypeMismatch(MethodArgumentTypeMismatchException ex, HttpServletRequest request) {
+    return new ApiError(
+        OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS),
+        400,
+        "Bad Request",
+        "Invalid value for parameter '" + ex.getName() + "': " + ex.getValue(),
         request.getRequestURI());
   }
 }

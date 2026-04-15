@@ -5,6 +5,8 @@ import com.combotto.controlplane.api.CreateCertificateRequest;
 import com.combotto.controlplane.api.UpdateCertificateRequest;
 import com.combotto.controlplane.common.ResourceNotFoundException;
 import com.combotto.controlplane.model.CertificateEntity;
+import com.combotto.controlplane.model.CertificateStatus;
+import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
 
 import org.springframework.stereotype.Service;
@@ -45,8 +47,14 @@ public class CertificateService {
     return toResponse(certificateRepository.save(entity));
   }
 
-  public List<CertificateResponse> list() {
-    return certificateRepository.findAll()
+  public List<CertificateResponse> list(
+      String tenantId,
+      CertificateStatus status,
+      RenewalStatus renewalStatus) {
+
+    String normalizedTenantId = normalize(tenantId);
+
+    return certificateRepository.findByFilters(normalizedTenantId, status, renewalStatus)
         .stream()
         .map(this::toResponse)
         .toList();
@@ -114,5 +122,9 @@ public class CertificateService {
         entity.getNotes(),
         entity.getCreatedAt(),
         entity.getUpdatedAt());
+  }
+
+  private String normalize(String value) {
+    return (value == null || value.isBlank()) ? null : value;
   }
 }
