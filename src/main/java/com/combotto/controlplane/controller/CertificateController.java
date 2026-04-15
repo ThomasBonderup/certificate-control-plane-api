@@ -20,6 +20,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import jakarta.validation.Valid;
 
 import com.combotto.controlplane.api.CertificateResponse;
+import com.combotto.controlplane.api.CertificateSummaryResponse;
 import com.combotto.controlplane.api.CreateCertificateRequest;
 import com.combotto.controlplane.api.UpdateCertificateRequest;
 import com.combotto.controlplane.model.CertificateStatus;
@@ -75,5 +76,10 @@ public class CertificateController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void delete(@PathVariable UUID id) {
     certificateService.delete(id);
+  }
+
+  @GetMapping("/summary")
+  public CertificateSummaryResponse summary() {
+    return certificateService.summary();
   }
 }

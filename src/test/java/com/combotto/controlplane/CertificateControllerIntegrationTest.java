@@ -432,6 +432,65 @@ class CertificateControllerIntegrationTest {
     assertThat(certificateRepository.existsById(id)).isFalse();
   }
 
+  @Test
+  void summary_returns200_andCertificateSummary() throws Exception {
+    OffsetDateTime now = OffsetDateTime.now();
+
+    CreateCertificateRequest activeCertificate = validCreateRequest(
+        "demo-tenant",
+        "Active Broker Certificate",
+        "active.example.com",
+        "Let's Encrypt",
+        "111111111",
+        "AA:AA:AA:AA",
+        now.minusDays(30),
+        now.plusDays(60),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "counts toward total and active");
+
+    CreateCertificateRequest expiringSoonCertificate = validCreateRequest(
+        "demo-tenant",
+        "Expiring Soon Gateway Certificate",
+        "expiring.example.com",
+        "Combotto CA",
+        "222222222",
+        "BB:BB:BB:BB",
+        now.minusDays(10),
+        now.plusDays(10),
+        CertificateStatus.EXPIRING_SOON,
+        RenewalStatus.PLANNED,
+        "platform-team",
+        "counts toward total and expiringSoon");
+
+    CreateCertificateRequest renewalInProgressCertificate = validCreateRequest(
+        "demo-tenant",
+        "Renewal In Progress Certificate",
+        "renewal.example.com",
+        "Combotto CA",
+        "333333333",
+        "CC:CC:CC:CC",
+        now.minusDays(5),
+        now.plusDays(60),
+        CertificateStatus.EXPIRING_SOON,
+        RenewalStatus.IN_PROGRESS,
+        "platform-team",
+        "counts toward total and renewalProgress");
+
+    createCertificate(activeCertificate);
+    createCertificate(expiringSoonCertificate);
+    createCertificate(renewalInProgressCertificate);
+
+    mockMvc.perform(get("/api/certificates/summary"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.total").value(3))
+        .andExpect(jsonPath("$.active").value(1))
+        .andExpect(jsonPath("$.expiredSoon").value(1))
+        .andExpect(jsonPath("$.expired").value(0))
+        .andExpect(jsonPath("$.renewalProgress").value(1));
+  }
+
   private CreateCertificateRequest validCreateRequest() {
     return validCreateRequest(
         "demo-tenant",
@@ -478,6 +537,13 @@ class CertificateControllerIntegrationTest {
 
   private String validCreateRequestJson() throws Exception {
     return objectMapper.writeValueAsString(validCreateRequest());
+  }
+
+  private void createCertificate(CreateCertificateRequest request) throws Exception {
+    mockMvc.perform(post("/api/certificates")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated());
   }
 
   private UUID createCertificateAndReturnId() throws Exception {

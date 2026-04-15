@@ -1,6 +1,7 @@
 package com.combotto.controlplane.repositories;
 
 import java.util.UUID;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,4 +26,19 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
       @Param("tenantId") String tenantId,
       @Param("status") CertificateStatus status,
       @Param("renewalStatus") RenewalStatus renewalStatus);
+
+  long countByStatus(CertificateStatus status);
+
+  @Query("""
+      select count(c)
+      from CertificateEntity c
+      where c.notAfter is not null
+        and c.notAfter > :now
+        and c.notAfter <= :threshold
+      """)
+  long countExpiringSoon(
+      @Param("now") OffsetDateTime now,
+      @Param("threshold") OffsetDateTime threshold);
+
+  long countByRenewalStatus(RenewalStatus renewalStatus);
 }
