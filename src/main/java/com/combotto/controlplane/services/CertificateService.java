@@ -5,11 +5,14 @@ import com.combotto.controlplane.api.CreateCertificateRequest;
 import com.combotto.controlplane.api.UpdateCertificateRequest;
 import com.combotto.controlplane.common.ResourceNotFoundException;
 import com.combotto.controlplane.model.CertificateEntity;
+import com.combotto.controlplane.model.CertificateStatus;
+import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
 
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import java.util.List;
 
@@ -22,7 +25,7 @@ public class CertificateService {
   }
 
   public CertificateResponse create(CreateCertificateRequest request) {
-    OffsetDateTime now = OffsetDateTime.now();
+    OffsetDateTime now = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
 
     CertificateEntity entity = new CertificateEntity();
     entity.setId(UUID.randomUUID());
@@ -44,36 +47,53 @@ public class CertificateService {
     return toResponse(certificateRepository.save(entity));
   }
 
-  public List<CertificateResponse> list() {
-    return certificateRepository.findAll()
-      .stream()
-      .map(this::toResponse)
-      .toList();
+  public List<CertificateResponse> list(
+      String tenantId,
+      CertificateStatus status,
+      RenewalStatus renewalStatus) {
+
+    String normalizedTenantId = normalize(tenantId);
+
+    return certificateRepository.findByFilters(normalizedTenantId, status, renewalStatus)
+        .stream()
+        .map(this::toResponse)
+        .toList();
   }
 
   public CertificateResponse getById(UUID id) {
     CertificateEntity entity = certificateRepository.findById(id)
-      .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + id));
+        .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + id));
     return toResponse(entity);
   }
 
   public CertificateResponse update(UUID id, UpdateCertificateRequest request) {
     CertificateEntity entity = certificateRepository.findById(id)
-      .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + id));
+        .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + id));
 
-    if (request.name() != null) entity.setName(request.name());
-    if (request.commonName() != null) entity.setCommonName(request.commonName());
-    if (request.issuer() != null) entity.setIssuer(request.issuer());
-    if (request.serialNumber() != null) entity.setSerialNumber(request.serialNumber());
-    if (request.sha256Fingerprint() != null) entity.setSha256Fingerprint(request.sha256Fingerprint());
-    if (request.notBefore() != null) entity.setNotBefore(request.notBefore());
-    if (request.notAfter() != null) entity.setNotAfter(request.notAfter());
-    if (request.status() != null) entity.setStatus(request.status());
-    if (request.renewalStatus() != null) entity.setRenewalStatus(request.renewalStatus());
-    if (request.owner() != null) entity.setOwner(request.owner());
-    if (request.notes() != null) entity.setNotes(request.notes());
+    if (request.name() != null)
+      entity.setName(request.name());
+    if (request.commonName() != null)
+      entity.setCommonName(request.commonName());
+    if (request.issuer() != null)
+      entity.setIssuer(request.issuer());
+    if (request.serialNumber() != null)
+      entity.setSerialNumber(request.serialNumber());
+    if (request.sha256Fingerprint() != null)
+      entity.setSha256Fingerprint(request.sha256Fingerprint());
+    if (request.notBefore() != null)
+      entity.setNotBefore(request.notBefore());
+    if (request.notAfter() != null)
+      entity.setNotAfter(request.notAfter());
+    if (request.status() != null)
+      entity.setStatus(request.status());
+    if (request.renewalStatus() != null)
+      entity.setRenewalStatus(request.renewalStatus());
+    if (request.owner() != null)
+      entity.setOwner(request.owner());
+    if (request.notes() != null)
+      entity.setNotes(request.notes());
 
-    entity.setUpdatedAt(OffsetDateTime.now());
+    entity.setUpdatedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS));
 
     return toResponse(certificateRepository.save(entity));
   }
@@ -102,5 +122,9 @@ public class CertificateService {
         entity.getNotes(),
         entity.getCreatedAt(),
         entity.getUpdatedAt());
+  }
+
+  private String normalize(String value) {
+    return (value == null || value.isBlank()) ? null : value;
   }
 }
