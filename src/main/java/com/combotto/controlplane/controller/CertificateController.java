@@ -62,8 +62,17 @@ public class CertificateController {
 
   @GetMapping("/expiring-soon")
   public List<CertificateResponse> listExpiringSoon(
+      @RequestParam(defaultValue = "30") int days,
+      @RequestParam(required = false) String tenantId,
+      @RequestParam(required = false) String owner,
+      @RequestParam(required = false) RenewalStatus renewalStatus) {
+    return certificateService.listExpiringSoon(days, tenantId, owner, renewalStatus);
+  }
+
+  @GetMapping("/attention-needed")
+  public List<CertificateResponse> listAttentionNeeded(
       @RequestParam(defaultValue = "30") int days) {
-    return certificateService.listExpiringSoon(days);
+    return certificateService.listAttentionNeeded(days);
   }
 
   @GetMapping("/{id}")

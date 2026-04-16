@@ -33,11 +33,46 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
       where c.notAfter is not null
         and c.notAfter > :now
         and c.notAfter <= :threshold
+        and (:tenantId is null or c.tenantId = :tenantId)
+        and (:owner is null or c.owner = :owner)
+        and (:renewalStatus is null or c.renewalStatus = :renewalStatus)
       order by c.notAfter asc
       """)
-  List<CertificateEntity> findExpiringSoon(
+  List<CertificateEntity> findExpiringSoonByFilters(
       @Param("now") OffsetDateTime now,
-      @Param("threshold") OffsetDateTime threshold);
+      @Param("threshold") OffsetDateTime threshold,
+      @Param("tenantId") String tenantId,
+      @Param("owner") String owner,
+      @Param("renewalStatus") RenewalStatus renewalStatus);
+
+  @Query("""
+      select c
+      from CertificateEntity c
+      where
+        (c.notAfter is not null and c.notAfter <= :now)
+        or
+        (
+          c.notAfter is not null
+          and c.notAfter > :now
+          and c.notAfter <= :threshold
+          and (
+            (c.owner is null or trim(c.owner) = '')
+            or c.renewalStatus = :renewalNotStarted
+            or c.renewalStatus = :renewalPlanned
+            or c.renewalStatus = :renewalInProgress
+          )
+        )
+        or
+        c.renewalStatus = :renewalBlocked
+      order by c.notAfter asc
+      """)
+  List<CertificateEntity> findAttentionNeeded(
+      @Param("now") OffsetDateTime now,
+      @Param("threshold") OffsetDateTime threshold,
+      @Param("renewalNotStarted") RenewalStatus renewalNotStarted,
+      @Param("renewalPlanned") RenewalStatus renewalPlanned,
+      @Param("renewalInProgress") RenewalStatus renewalInProgress,
+      @Param("renewalBlocked") RenewalStatus renewalBlocked);
 
   long countByStatus(CertificateStatus status);
 
