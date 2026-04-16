@@ -71,8 +71,8 @@ class CertificateBindingControllerIntegrationTest {
 
   @Test
   void create_returns201_location_body_and_persistsCertificateBinding() throws Exception {
-    UUID certificateId = createCertificateAndReturnId();
-    UUID assetId = createAssetAndReturnId();
+    UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
+    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
 
     String responseBody = mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
         .contentType(MediaType.APPLICATION_JSON)
@@ -81,6 +81,7 @@ class CertificateBindingControllerIntegrationTest {
         .andExpect(header().string("Location", org.hamcrest.Matchers.matchesPattern(
             ".*/api/certificates/.*/bindings")))
         .andExpect(jsonPath("$.certificateId").value(certificateId.toString()))
+        .andExpect(jsonPath("$.certificateName").value("Broker TLS Certificate"))
         .andExpect(jsonPath("$.assetId").value(assetId.toString()))
         .andExpect(jsonPath("$.assetName").value("Primary Gateway Asset"))
         .andExpect(jsonPath("$.bindingType").value("MQTT_ENDPOINT"))
@@ -91,7 +92,7 @@ class CertificateBindingControllerIntegrationTest {
         .getContentAsString();
 
     JsonNode body = objectMapper.readTree(responseBody);
-    UUID bindingId = UUID.fromString(body.get("id").asText());
+    UUID bindingId = UUID.fromString(body.get("id").asString());
 
     var saved = certificateBindingRepository.findById(bindingId);
     assertThat(saved).isPresent();
@@ -105,7 +106,7 @@ class CertificateBindingControllerIntegrationTest {
   @Test
   void create_returns404_whenCertificateDoesNotExist() throws Exception {
     UUID missingCertificateId = UUID.randomUUID();
-    UUID assetId = createAssetAndReturnId();
+    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
 
     mockMvc.perform(post("/api/certificates/{certificateId}/bindings", missingCertificateId)
         .contentType(MediaType.APPLICATION_JSON)
@@ -119,7 +120,7 @@ class CertificateBindingControllerIntegrationTest {
 
   @Test
   void create_returns404_whenAssetDoesNotExist() throws Exception {
-    UUID certificateId = createCertificateAndReturnId();
+    UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
     UUID missingAssetId = UUID.randomUUID();
 
     mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
@@ -134,22 +135,52 @@ class CertificateBindingControllerIntegrationTest {
 
   @Test
   void listByCertificateId_returns200_andOnlyBindingsForCertificate() throws Exception {
-    UUID certificateId = createCertificateAndReturnId();
-    UUID otherCertificateId = createCertificateAndReturnId();
+    UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper, "Broker TLS Certificate");
+    UUID otherCertificateId = CertificateFixtures.createAndReturnId(
+        mockMvc,
+        objectMapper,
+        "Gateway Client Certificate");
 
-    UUID gatewayAssetId = createAssetAndReturnId();
-    UUID brokerAssetId = createAssetAndReturnId("demo-tenant", "Broker Asset");
-    UUID unrelatedAssetId = createAssetAndReturnId("demo-tenant", "Unrelated Asset");
+    UUID gatewayAssetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
+    UUID brokerAssetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Broker Asset");
+    UUID unrelatedAssetId = AssetFixtures.createAndReturnId(
+        mockMvc,
+        objectMapper,
+        "demo-tenant",
+        "Unrelated Asset");
 
-    createBinding(certificateId, gatewayAssetId, BindingType.MQTT_ENDPOINT, "mqtt.example.com", 8883);
-    createBinding(certificateId, brokerAssetId, BindingType.HTTPS_ENDPOINT, "https://broker.example.com", 443);
-    createBinding(otherCertificateId, unrelatedAssetId, BindingType.DEVICE_CERT, null, null);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        gatewayAssetId,
+        BindingType.MQTT_ENDPOINT,
+        "mqtt.example.com",
+        8883);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        brokerAssetId,
+        BindingType.HTTPS_ENDPOINT,
+        "https://broker.example.com",
+        443);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        otherCertificateId,
+        unrelatedAssetId,
+        BindingType.DEVICE_CERT,
+        null,
+        null);
 
     mockMvc.perform(get("/api/certificates/{certificateId}/bindings", certificateId))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()").value(2))
         .andExpect(jsonPath("$[*].certificateId",
             org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(certificateId.toString()))))
+        .andExpect(jsonPath("$[*].certificateName",
+            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("Broker TLS Certificate"))))
         .andExpect(jsonPath("$[*].assetId",
             org.hamcrest.Matchers.containsInAnyOrder(
                 gatewayAssetId.toString(),
@@ -174,66 +205,5 @@ class CertificateBindingControllerIntegrationTest {
         .andExpect(jsonPath("$.error").value("Not Found"))
         .andExpect(jsonPath("$.message").value("Certificate not found: " + missingCertificateId))
         .andExpect(jsonPath("$.path").value("/api/certificates/" + missingCertificateId + "/bindings"));
-  }
-
-  private UUID createCertificateAndReturnId() throws Exception {
-    String responseBody = mockMvc.perform(post("/api/certificates")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode body = objectMapper.readTree(responseBody);
-    return UUID.fromString(body.get("id").asString());
-  }
-
-  private UUID createAssetAndReturnId() throws Exception {
-    String responseBody = mockMvc.perform(post("/api/assets")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(AssetFixtures.validCreateRequestJson(objectMapper)))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode body = objectMapper.readTree(responseBody);
-    return UUID.fromString(body.get("id").asString());
-  }
-
-  private UUID createAssetAndReturnId(String tenantId, String name) throws Exception {
-    String responseBody = mockMvc.perform(post("/api/assets")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(AssetFixtures.validCreateRequestJson(
-            objectMapper,
-            AssetFixtures.validCreateRequest(
-                tenantId,
-                name,
-                com.combotto.controlplane.model.AssetType.GATEWAY,
-                "production",
-                name.toLowerCase().replace(" ", "-") + ".example.com",
-                "eu-west-1"))))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode body = objectMapper.readTree(responseBody);
-    return UUID.fromString(body.get("id").asString());
-  }
-
-  private void createBinding(
-      UUID certificateId,
-      UUID assetId,
-      BindingType bindingType,
-      String endpoint,
-      Integer port) throws Exception {
-    mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(CertificateBindingFixtures.validCreateRequestJson(
-            objectMapper,
-            CertificateBindingFixtures.validCreateRequest(assetId, bindingType, endpoint, port))))
-        .andExpect(status().isCreated());
   }
 }

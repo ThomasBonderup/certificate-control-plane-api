@@ -8,5 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import com.combotto.controlplane.model.CertificateBindingEntity;
 
 public interface CertificateBindingRepository extends JpaRepository<CertificateBindingEntity, UUID> {
+  List<CertificateBindingEntity> findByAssetId(UUID assetId);
   List<CertificateBindingEntity> findByCertificateId(UUID certificateId);
 }

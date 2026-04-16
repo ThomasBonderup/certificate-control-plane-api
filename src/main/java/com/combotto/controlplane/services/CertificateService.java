@@ -4,6 +4,7 @@ import com.combotto.controlplane.api.CertificateResponse;
 import com.combotto.controlplane.api.CertificateSummaryResponse;
 import com.combotto.controlplane.api.CreateCertificateRequest;
 import com.combotto.controlplane.api.UpdateCertificateRequest;
+import com.combotto.controlplane.common.CertificateMapper;
 import com.combotto.controlplane.common.ResourceNotFoundException;
 import com.combotto.controlplane.model.CertificateEntity;
 import com.combotto.controlplane.model.CertificateStatus;
@@ -20,9 +21,11 @@ import java.util.List;
 @Service
 public class CertificateService {
   private final CertificateRepository certificateRepository;
+  private final CertificateMapper certificateMapper;
 
-  public CertificateService(CertificateRepository certificateRepository) {
+  public CertificateService(CertificateRepository certificateRepository, CertificateMapper certificateMapper) {
     this.certificateRepository = certificateRepository;
+    this.certificateMapper = certificateMapper;
   }
 
   public CertificateResponse create(CreateCertificateRequest request) {
@@ -45,7 +48,7 @@ public class CertificateService {
     entity.setCreatedAt(now);
     entity.setUpdatedAt(now);
 
-    return toResponse(certificateRepository.save(entity));
+    return certificateMapper.toResponse(certificateRepository.save(entity));
   }
 
   public List<CertificateResponse> list(
@@ -57,14 +60,14 @@ public class CertificateService {
 
     return certificateRepository.findByFilters(normalizedTenantId, status, renewalStatus)
         .stream()
-        .map(this::toResponse)
+        .map(certificateMapper::toResponse)
         .toList();
   }
 
   public CertificateResponse getById(UUID id) {
     CertificateEntity entity = certificateRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + id));
-    return toResponse(entity);
+    return certificateMapper.toResponse(entity);
   }
 
   public CertificateResponse update(UUID id, UpdateCertificateRequest request) {
@@ -96,7 +99,7 @@ public class CertificateService {
 
     entity.setUpdatedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS));
 
-    return toResponse(certificateRepository.save(entity));
+    return certificateMapper.toResponse(certificateRepository.save(entity));
   }
 
   public void delete(UUID id) {
@@ -116,25 +119,6 @@ public class CertificateService {
         certificateRepository.countExpiringSoon(now, soon),
         certificateRepository.countByStatus(CertificateStatus.EXPIRED),
         certificateRepository.countByRenewalStatus(RenewalStatus.IN_PROGRESS));
-  }
-
-  public CertificateResponse toResponse(CertificateEntity entity) {
-    return new CertificateResponse(
-        entity.getId(),
-        entity.getTenantId(),
-        entity.getName(),
-        entity.getCommonName(),
-        entity.getIssuer(),
-        entity.getSerialNumber(),
-        entity.getSha256Fingerprint(),
-        entity.getNotBefore(),
-        entity.getNotAfter(),
-        entity.getStatus().name(),
-        entity.getRenewalStatus().name(),
-        entity.getOwner(),
-        entity.getNotes(),
-        entity.getCreatedAt(),
-        entity.getUpdatedAt());
   }
 
   private String normalize(String value) {

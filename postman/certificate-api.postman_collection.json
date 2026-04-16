@@ -13,6 +13,10 @@
     {
       "key": "certificateId",
       "value": ""
+    },
+    {
+      "key": "assetId",
+      "value": ""
     }
   ],
   "item": [
@@ -56,6 +60,126 @@
               "if (body && body.id) {",
               "  pm.collectionVariables.set(\"certificateId\", body.id);",
               "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Asset",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tenantId\": \"demo-tenant\",\n  \"name\": \"Primary Gateway Asset\",\n  \"assetType\": \"GATEWAY\",\n  \"environment\": \"production\",\n  \"hostname\": \"gateway-01.example.com\",\n  \"location\": \"eu-west-1\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/assets",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "assets"
+          ]
+        },
+        "description": "Creates an asset and stores the returned id into the collection variable `assetId`."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 201\", function () {",
+              "  pm.response.to.have.status(201);",
+              "});",
+              "",
+              "var body = pm.response.json();",
+              "if (body && body.id) {",
+              "  pm.collectionVariables.set(\"assetId\", body.id);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Create Certificate Binding",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"assetId\": \"{{assetId}}\",\n  \"bindingType\": \"MQTT_ENDPOINT\",\n  \"endpoint\": \"mqtt.example.com\",\n  \"port\": 8883\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/certificates/{{certificateId}}/bindings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "certificates",
+            "{{certificateId}}",
+            "bindings"
+          ]
+        },
+        "description": "Creates a certificate binding. Run `Create Certificate` and `Create Asset` first, or set `certificateId` and `assetId` manually."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 201\", function () {",
+              "  pm.response.to.have.status(201);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "List Certificate Bindings",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/certificates/{{certificateId}}/bindings",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "certificates",
+            "{{certificateId}}",
+            "bindings"
+          ]
+        },
+        "description": "Lists all bindings for a certificate. Run `Create Certificate` first or set `certificateId` manually."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});"
             ]
           }
         }

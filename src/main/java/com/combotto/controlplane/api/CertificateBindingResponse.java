@@ -8,6 +8,7 @@ import com.combotto.controlplane.model.BindingType;
 public record CertificateBindingResponse(
     UUID id,
     UUID certificateId,
+    String certificateName,
     UUID assetId,
     String assetName,
     BindingType bindingType,

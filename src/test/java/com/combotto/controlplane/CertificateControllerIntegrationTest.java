@@ -116,7 +116,7 @@ class CertificateControllerIntegrationTest {
 
   @Test
   void getById_returns200_andBody() throws Exception {
-    UUID id = createCertificateAndReturnId();
+    UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
 
     mockMvc.perform(get("/api/certificates/{id}", id))
         .andExpect(status().isOk())
@@ -394,7 +394,7 @@ class CertificateControllerIntegrationTest {
 
   @Test
   void update_returns200_andUpdatedCertificate() throws Exception {
-    UUID id = createCertificateAndReturnId();
+    UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
 
     String updateRequest = """
         {
@@ -425,7 +425,7 @@ class CertificateControllerIntegrationTest {
 
   @Test
   void delete_returns204_andRemovesCertificate() throws Exception {
-    UUID id = createCertificateAndReturnId();
+    UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
 
     mockMvc.perform(delete("/api/certificates/{id}", id))
         .andExpect(status().isNoContent());
@@ -479,9 +479,9 @@ class CertificateControllerIntegrationTest {
         "platform-team",
         "counts toward total and renewalProgress");
 
-    createCertificate(activeCertificate);
-    createCertificate(expiringSoonCertificate);
-    createCertificate(renewalInProgressCertificate);
+    CertificateFixtures.create(mockMvc, objectMapper, activeCertificate);
+    CertificateFixtures.create(mockMvc, objectMapper, expiringSoonCertificate);
+    CertificateFixtures.create(mockMvc, objectMapper, renewalInProgressCertificate);
 
     mockMvc.perform(get("/api/certificates/summary"))
         .andExpect(status().isOk())
@@ -490,25 +490,5 @@ class CertificateControllerIntegrationTest {
         .andExpect(jsonPath("$.expiredSoon").value(1))
         .andExpect(jsonPath("$.expired").value(0))
         .andExpect(jsonPath("$.renewalProgress").value(1));
-  }
-
-  private void createCertificate(CreateCertificateRequest request) throws Exception {
-    mockMvc.perform(post("/api/certificates")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated());
-  }
-
-  private UUID createCertificateAndReturnId() throws Exception {
-    String responseBody = mockMvc.perform(post("/api/certificates")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode body = objectMapper.readTree(responseBody);
-    return UUID.fromString(body.get("id").asString());
   }
 }
