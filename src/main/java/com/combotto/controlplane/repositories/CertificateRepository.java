@@ -33,11 +33,17 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
       where c.notAfter is not null
         and c.notAfter > :now
         and c.notAfter <= :threshold
+        and (:tenantId is null or c.tenantId = :tenantId)
+        and (:owner is null or c.owner = :owner)
+        and (:renewalStatus is null or c.renewalStatus = :renewalStatus)
       order by c.notAfter asc
       """)
-  List<CertificateEntity> findExpiringSoon(
+  List<CertificateEntity> findExpiringSoonByFilters(
       @Param("now") OffsetDateTime now,
-      @Param("threshold") OffsetDateTime threshold);
+      @Param("threshold") OffsetDateTime threshold,
+      @Param("tenantId") String tenantId,
+      @Param("owner") String owner,
+      @Param("renewalStatus") RenewalStatus renewalStatus);
 
   long countByStatus(CertificateStatus status);
 

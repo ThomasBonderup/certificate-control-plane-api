@@ -64,11 +64,22 @@ public class CertificateService {
         .toList();
   }
 
-  public List<CertificateResponse> listExpiringSoon(int days) {
+  public List<CertificateResponse> listExpiringSoon(
+      int days,
+      String tenantId,
+      String owner,
+      RenewalStatus renewalStatus) {
     OffsetDateTime now = OffsetDateTime.now();
     OffsetDateTime threshold = now.plusDays(days);
+    String normalizedTenantId = normalize(tenantId);
+    String normalizedOwner = normalize(owner);
 
-    return certificateRepository.findExpiringSoon(now, threshold)
+    return certificateRepository.findExpiringSoonByFilters(
+        now,
+        threshold,
+        normalizedTenantId,
+        normalizedOwner,
+        renewalStatus)
         .stream()
         .map(certificateMapper::toResponse)
         .toList();

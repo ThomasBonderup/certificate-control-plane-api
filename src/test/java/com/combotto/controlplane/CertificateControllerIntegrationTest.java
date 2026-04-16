@@ -466,6 +466,118 @@ class CertificateControllerIntegrationTest {
   }
 
   @Test
+  void listExpiringSoon_returns200_whenFiltersAreCombined() throws Exception {
+    OffsetDateTime now = OffsetDateTime.now();
+
+    CreateCertificateRequest matchingFirst = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "First Matching Certificate",
+        "first-match.example.com",
+        "Let's Encrypt",
+        "555555555",
+        "EE:EE:EE:EE",
+        now.minusDays(30),
+        now.plusDays(5),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.IN_PROGRESS,
+        "platform-team",
+        "matches all filters and expires first");
+
+    CreateCertificateRequest matchingSecond = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Second Matching Certificate",
+        "second-match.example.com",
+        "Combotto CA",
+        "666666666",
+        "FF:FF:FF:FF",
+        now.minusDays(20),
+        now.plusDays(8),
+        CertificateStatus.EXPIRING_SOON,
+        RenewalStatus.IN_PROGRESS,
+        "platform-team",
+        "matches all filters and expires second");
+
+    CreateCertificateRequest wrongOwner = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Wrong Owner Certificate",
+        "wrong-owner.example.com",
+        "Combotto CA",
+        "777777777",
+        "11:11:11:11",
+        now.minusDays(20),
+        now.plusDays(7),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.IN_PROGRESS,
+        "other-owner",
+        "wrong owner");
+
+    CreateCertificateRequest wrongTenant = CertificateFixtures.validCreateRequest(
+        "other-tenant",
+        "Wrong Tenant Certificate",
+        "wrong-tenant.example.com",
+        "Combotto CA",
+        "888888888",
+        "22:22:22:22",
+        now.minusDays(20),
+        now.plusDays(6),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.IN_PROGRESS,
+        "platform-team",
+        "wrong tenant");
+
+    CreateCertificateRequest wrongRenewalStatus = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Wrong Renewal Status Certificate",
+        "wrong-renewal.example.com",
+        "Combotto CA",
+        "999999999",
+        "33:33:33:33",
+        now.minusDays(20),
+        now.plusDays(4),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.PLANNED,
+        "platform-team",
+        "wrong renewal status");
+
+    CreateCertificateRequest outsideDaysWindow = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Outside Days Window Certificate",
+        "outside-window.example.com",
+        "Combotto CA",
+        "101010101",
+        "44:44:44:44",
+        now.minusDays(20),
+        now.plusDays(20),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.IN_PROGRESS,
+        "platform-team",
+        "outside custom days window");
+
+    CertificateFixtures.create(mockMvc, objectMapper, matchingFirst);
+    CertificateFixtures.create(mockMvc, objectMapper, matchingSecond);
+    CertificateFixtures.create(mockMvc, objectMapper, wrongOwner);
+    CertificateFixtures.create(mockMvc, objectMapper, wrongTenant);
+    CertificateFixtures.create(mockMvc, objectMapper, wrongRenewalStatus);
+    CertificateFixtures.create(mockMvc, objectMapper, outsideDaysWindow);
+
+    mockMvc.perform(get("/api/certificates/expiring-soon")
+        .param("days", "10")
+        .param("tenantId", "demo-tenant")
+        .param("owner", "platform-team")
+        .param("renewalStatus", "IN_PROGRESS"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].name").value("First Matching Certificate"))
+        .andExpect(jsonPath("$[1].name").value("Second Matching Certificate"))
+        .andExpect(jsonPath("$[*].tenantId",
+            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("demo-tenant"))))
+        .andExpect(jsonPath("$[*].owner",
+            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("platform-team"))))
+        .andExpect(jsonPath("$[*].renewalStatus",
+            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("IN_PROGRESS"))));
+  }
+
+  @Test
   void update_returns200_andUpdatedCertificate() throws Exception {
     UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
 
