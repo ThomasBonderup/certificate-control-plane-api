@@ -27,6 +27,18 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
       @Param("status") CertificateStatus status,
       @Param("renewalStatus") RenewalStatus renewalStatus);
 
+  @Query("""
+      select c
+      from CertificateEntity c
+      where c.notAfter is not null
+        and c.notAfter > :now
+        and c.notAfter <= :threshold
+      order by c.notAfter asc
+      """)
+  List<CertificateEntity> findExpiringSoon(
+      @Param("now") OffsetDateTime now,
+      @Param("threshold") OffsetDateTime threshold);
+
   long countByStatus(CertificateStatus status);
 
   @Query("""

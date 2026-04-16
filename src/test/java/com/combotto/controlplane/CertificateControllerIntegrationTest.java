@@ -393,6 +393,79 @@ class CertificateControllerIntegrationTest {
   }
 
   @Test
+  void listExpiringSoon_returns200_andOnlyCertificatesWithinDefault30DayWindowOrderedByNotAfter()
+      throws Exception {
+    OffsetDateTime now = OffsetDateTime.now();
+
+    CreateCertificateRequest expiringSoonFirst = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "First Expiring Certificate",
+        "first.example.com",
+        "Let's Encrypt",
+        "111111111",
+        "AA:AA:AA:AA",
+        now.minusDays(30),
+        now.plusDays(5),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "expires first");
+
+    CreateCertificateRequest expiringSoonSecond = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Second Expiring Certificate",
+        "second.example.com",
+        "Combotto CA",
+        "222222222",
+        "BB:BB:BB:BB",
+        now.minusDays(15),
+        now.plusDays(20),
+        CertificateStatus.EXPIRING_SOON,
+        RenewalStatus.PLANNED,
+        "platform-team",
+        "expires second");
+
+    CreateCertificateRequest outsideWindow = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Later Certificate",
+        "later.example.com",
+        "Combotto CA",
+        "333333333",
+        "CC:CC:CC:CC",
+        now.minusDays(10),
+        now.plusDays(45),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "platform-team",
+        "outside default window");
+
+    CreateCertificateRequest alreadyExpired = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Expired Certificate",
+        "expired.example.com",
+        "Combotto CA",
+        "444444444",
+        "DD:DD:DD:DD",
+        now.minusDays(60),
+        now.minusDays(1),
+        CertificateStatus.EXPIRED,
+        RenewalStatus.NOT_STATUS,
+        "platform-team",
+        "already expired");
+
+    CertificateFixtures.create(mockMvc, objectMapper, expiringSoonFirst);
+    CertificateFixtures.create(mockMvc, objectMapper, expiringSoonSecond);
+    CertificateFixtures.create(mockMvc, objectMapper, outsideWindow);
+    CertificateFixtures.create(mockMvc, objectMapper, alreadyExpired);
+
+    mockMvc.perform(get("/api/certificates/expiring-soon"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(2))
+        .andExpect(jsonPath("$[0].name").value("First Expiring Certificate"))
+        .andExpect(jsonPath("$[1].name").value("Second Expiring Certificate"));
+  }
+
+  @Test
   void update_returns200_andUpdatedCertificate() throws Exception {
     UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
 
