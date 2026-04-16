@@ -46,6 +46,18 @@ V1 is done when I can:
 - Testcontainers
 - Docker Compose
 
+## Local Docker defaults
+
+- Docker Compose publishes ports on `127.0.0.1` by default so the stack stays local-only.
+- `kafka-ui` is behind the `tools` profile and is not started unless requested.
+- Compose credentials and host port bindings can be overridden through `.env`.
+
+```bash
+cp .env.example .env
+docker compose up -d postgres kafka
+docker compose --profile tools up -d kafka-ui
+```
+
 ## Features
 
 ### Slice 1
