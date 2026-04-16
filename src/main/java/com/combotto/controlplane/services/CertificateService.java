@@ -85,6 +85,22 @@ public class CertificateService {
         .toList();
   }
 
+  public List<CertificateResponse> listAttentionNeeded(int days) {
+    OffsetDateTime now = OffsetDateTime.now();
+    OffsetDateTime threshold = now.plusDays(days);
+
+    return certificateRepository.findAttentionNeeded(
+        now,
+        threshold,
+        RenewalStatus.NOT_STATUS,
+        RenewalStatus.PLANNED,
+        RenewalStatus.IN_PROGRESS,
+        RenewalStatus.BLOCKED)
+        .stream()
+        .map(certificateMapper::toResponse)
+        .toList();
+  }
+
   public CertificateResponse getById(UUID id) {
     CertificateEntity entity = certificateRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + id));

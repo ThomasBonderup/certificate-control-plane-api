@@ -578,6 +578,157 @@ class CertificateControllerIntegrationTest {
   }
 
   @Test
+  void listAttentionNeeded_returns200_andIncludesExpiredAndWindowedAttentionCases() throws Exception {
+    OffsetDateTime now = OffsetDateTime.now();
+
+    CreateCertificateRequest expiredCertificate = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Expired Certificate",
+        "expired.example.com",
+        "Let's Encrypt",
+        "121212121",
+        "55:55:55:55",
+        now.minusDays(60),
+        now.minusDays(1),
+        CertificateStatus.EXPIRED,
+        RenewalStatus.PLANNED,
+        "platform-team",
+        "expired");
+
+    CreateCertificateRequest expiringSoonNotStarted = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Expiring Soon Not Started Certificate",
+        "not-started.example.com",
+        "Combotto CA",
+        "131313131",
+        "66:66:66:66",
+        now.minusDays(10),
+        now.plusDays(8),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "expiring soon and not started");
+
+    CreateCertificateRequest expiringSoonPlanned = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Expiring Soon Planned Certificate",
+        "planned.example.com",
+        "Combotto CA",
+        "131313132",
+        "66:66:66:67",
+        now.minusDays(10),
+        now.plusDays(10),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.PLANNED,
+        "thomas",
+        "expiring soon and planned");
+
+    CreateCertificateRequest expiringSoonInProgress = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Expiring Soon In Progress Certificate",
+        "in-progress.example.com",
+        "Combotto CA",
+        "131313133",
+        "66:66:66:68",
+        now.minusDays(10),
+        now.plusDays(14),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.IN_PROGRESS,
+        "thomas",
+        "expiring soon and in progress");
+
+    CreateCertificateRequest expiringSoonNoOwner = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Expiring Soon No Owner Certificate",
+        "no-owner.example.com",
+        "Combotto CA",
+        "141414141",
+        "77:77:77:77",
+        now.minusDays(10),
+        now.plusDays(12),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.COMPLETED,
+        "   ",
+        "blank owner should count");
+
+    CreateCertificateRequest blockedOutsideWindow = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Blocked Outside Window Certificate",
+        "blocked.example.com",
+        "Combotto CA",
+        "151515151",
+        "88:88:88:88",
+        now.minusDays(10),
+        now.plusDays(45),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.BLOCKED,
+        "platform-team",
+        "blocked should count even outside window");
+
+    CreateCertificateRequest laterNoOwner = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Later No Owner Certificate",
+        "later-no-owner.example.com",
+        "Combotto CA",
+        "161616161",
+        "99:99:99:99",
+        now.minusDays(10),
+        now.plusDays(45),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.PLANNED,
+        "",
+        "outside window should not count");
+
+    CreateCertificateRequest laterPlanned = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Later Planned Certificate",
+        "later-planned.example.com",
+        "Combotto CA",
+        "171717171",
+        "AA:BB:CC:DD",
+        now.minusDays(10),
+        now.plusDays(50),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.PLANNED,
+        "platform-team",
+        "outside window should not count");
+
+    CreateCertificateRequest expiringSoonCompletedOwned = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Expiring Soon Completed Owned Certificate",
+        "completed.example.com",
+        "Combotto CA",
+        "181818181",
+        "EE:FF:GG:HH",
+        now.minusDays(10),
+        now.plusDays(16),
+        CertificateStatus.ACTIVE,
+        RenewalStatus.COMPLETED,
+        "platform-team",
+        "completed with owner should not count");
+
+    CertificateFixtures.create(mockMvc, objectMapper, expiredCertificate);
+    CertificateFixtures.create(mockMvc, objectMapper, expiringSoonNotStarted);
+    CertificateFixtures.create(mockMvc, objectMapper, expiringSoonPlanned);
+    CertificateFixtures.create(mockMvc, objectMapper, expiringSoonInProgress);
+    CertificateFixtures.create(mockMvc, objectMapper, expiringSoonNoOwner);
+    CertificateFixtures.create(mockMvc, objectMapper, blockedOutsideWindow);
+    CertificateFixtures.create(mockMvc, objectMapper, laterNoOwner);
+    CertificateFixtures.create(mockMvc, objectMapper, laterPlanned);
+    CertificateFixtures.create(mockMvc, objectMapper, expiringSoonCompletedOwned);
+
+    mockMvc.perform(get("/api/certificates/attention-needed"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(6))
+        .andExpect(jsonPath("$[0].name").value("Expired Certificate"))
+        .andExpect(jsonPath("$[1].name").value("Expiring Soon Not Started Certificate"))
+        .andExpect(jsonPath("$[2].name").value("Expiring Soon Planned Certificate"))
+        .andExpect(jsonPath("$[3].name").value("Expiring Soon No Owner Certificate"))
+        .andExpect(jsonPath("$[4].name").value("Expiring Soon In Progress Certificate"))
+        .andExpect(jsonPath("$[5].name").value("Blocked Outside Window Certificate"));
+  }
+
+  @Test
   void update_returns200_andUpdatedCertificate() throws Exception {
     UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
 

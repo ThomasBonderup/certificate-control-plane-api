@@ -45,6 +45,35 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
       @Param("owner") String owner,
       @Param("renewalStatus") RenewalStatus renewalStatus);
 
+  @Query("""
+      select c
+      from CertificateEntity c
+      where
+        (c.notAfter is not null and c.notAfter <= :now)
+        or
+        (
+          c.notAfter is not null
+          and c.notAfter > :now
+          and c.notAfter <= :threshold
+          and (
+            (c.owner is null or trim(c.owner) = '')
+            or c.renewalStatus = :renewalNotStarted
+            or c.renewalStatus = :renewalPlanned
+            or c.renewalStatus = :renewalInProgress
+          )
+        )
+        or
+        c.renewalStatus = :renewalBlocked
+      order by c.notAfter asc
+      """)
+  List<CertificateEntity> findAttentionNeeded(
+      @Param("now") OffsetDateTime now,
+      @Param("threshold") OffsetDateTime threshold,
+      @Param("renewalNotStarted") RenewalStatus renewalNotStarted,
+      @Param("renewalPlanned") RenewalStatus renewalPlanned,
+      @Param("renewalInProgress") RenewalStatus renewalInProgress,
+      @Param("renewalBlocked") RenewalStatus renewalBlocked);
+
   long countByStatus(CertificateStatus status);
 
   @Query("""
