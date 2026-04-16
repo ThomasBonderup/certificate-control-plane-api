@@ -110,6 +110,13 @@ public final class CertificateFixtures {
   public static UUID createAndReturnId(
       MockMvc mockMvc,
       ObjectMapper objectMapper,
+      String name) throws Exception {
+    return createAndReturnId(mockMvc, objectMapper, validCreateRequest(name));
+  }
+
+  public static UUID createAndReturnId(
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
       CreateCertificateRequest request) throws Exception {
     String responseBody = mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)

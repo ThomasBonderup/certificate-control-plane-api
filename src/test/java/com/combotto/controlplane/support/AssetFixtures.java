@@ -76,6 +76,14 @@ public final class AssetFixtures {
   public static UUID createAndReturnId(
       MockMvc mockMvc,
       ObjectMapper objectMapper,
+      String tenantId,
+      String name) throws Exception {
+    return createAndReturnId(mockMvc, objectMapper, validCreateRequest(tenantId, name));
+  }
+
+  public static UUID createAndReturnId(
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
       CreateAssetRequest request) throws Exception {
     String responseBody = mockMvc.perform(post("/api/assets")
         .contentType(MediaType.APPLICATION_JSON)

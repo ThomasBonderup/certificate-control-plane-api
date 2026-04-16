@@ -97,8 +97,8 @@ class AssetControllerIntegrationTest {
 
   @Test
   void list_returns200_andAllAssets() throws Exception {
-    createAssetAndReturnId();
-    createAssetAndReturnId("demo-tenant", "Broker Asset");
+    AssetFixtures.createAndReturnId(mockMvc, objectMapper);
+    AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Broker Asset");
 
     mockMvc.perform(get("/api/assets"))
         .andExpect(status().isOk())
@@ -115,7 +115,7 @@ class AssetControllerIntegrationTest {
 
   @Test
   void getById_returns200_andBody() throws Exception {
-    UUID assetId = createAssetAndReturnId();
+    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
 
     mockMvc.perform(get("/api/assets/{id}", assetId))
         .andExpect(status().isOk())
@@ -142,7 +142,7 @@ class AssetControllerIntegrationTest {
 
   @Test
   void update_returns200_andUpdatesAsset() throws Exception {
-    UUID assetId = createAssetAndReturnId();
+    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
 
     mockMvc.perform(patch("/api/assets/{id}", assetId)
         .contentType(MediaType.APPLICATION_JSON)
@@ -192,7 +192,7 @@ class AssetControllerIntegrationTest {
 
   @Test
   void delete_returns204_andRemovesAsset() throws Exception {
-    UUID assetId = createAssetAndReturnId();
+    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
 
     mockMvc.perform(delete("/api/assets/{id}", assetId))
         .andExpect(status().isNoContent());
@@ -214,16 +214,43 @@ class AssetControllerIntegrationTest {
 
   @Test
   void listBindingsByAssetId_returns200_andOnlyBindingsForAsset() throws Exception {
-    UUID assetId = createAssetAndReturnId();
-    UUID otherAssetId = createAssetAndReturnId("demo-tenant", "Broker Asset");
+    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
+    UUID otherAssetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Broker Asset");
 
-    UUID certificateId = createCertificateAndReturnId();
-    UUID otherCertificateId = createCertificateAndReturnId("Gateway Client Certificate");
-    UUID unrelatedCertificateId = createCertificateAndReturnId("Unrelated Certificate");
+    UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
+    UUID otherCertificateId = CertificateFixtures.createAndReturnId(
+        mockMvc,
+        objectMapper,
+        "Gateway Client Certificate");
+    UUID unrelatedCertificateId = CertificateFixtures.createAndReturnId(
+        mockMvc,
+        objectMapper,
+        "Unrelated Certificate");
 
-    createBinding(certificateId, assetId, BindingType.MQTT_ENDPOINT, "mqtt.example.com", 8883);
-    createBinding(otherCertificateId, assetId, BindingType.HTTPS_ENDPOINT, "https://broker.example.com", 443);
-    createBinding(unrelatedCertificateId, otherAssetId, BindingType.DEVICE_CERT, null, null);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        assetId,
+        BindingType.MQTT_ENDPOINT,
+        "mqtt.example.com",
+        8883);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        otherCertificateId,
+        assetId,
+        BindingType.HTTPS_ENDPOINT,
+        "https://broker.example.com",
+        443);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        unrelatedCertificateId,
+        otherAssetId,
+        BindingType.DEVICE_CERT,
+        null,
+        null);
 
     mockMvc.perform(get("/api/assets/{assetId}/bindings", assetId))
         .andExpect(status().isOk())
@@ -258,16 +285,43 @@ class AssetControllerIntegrationTest {
 
   @Test
   void listCertificatesByAssetId_returns200_andOnlyCertificatesForAsset() throws Exception {
-    UUID assetId = createAssetAndReturnId();
-    UUID otherAssetId = createAssetAndReturnId("demo-tenant", "Broker Asset");
+    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
+    UUID otherAssetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Broker Asset");
 
-    UUID certificateId = createCertificateAndReturnId();
-    UUID otherCertificateId = createCertificateAndReturnId("Gateway Client Certificate");
-    UUID unrelatedCertificateId = createCertificateAndReturnId("Unrelated Certificate");
+    UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
+    UUID otherCertificateId = CertificateFixtures.createAndReturnId(
+        mockMvc,
+        objectMapper,
+        "Gateway Client Certificate");
+    UUID unrelatedCertificateId = CertificateFixtures.createAndReturnId(
+        mockMvc,
+        objectMapper,
+        "Unrelated Certificate");
 
-    createBinding(certificateId, assetId, BindingType.MQTT_ENDPOINT, "mqtt.example.com", 8883);
-    createBinding(otherCertificateId, assetId, BindingType.HTTPS_ENDPOINT, "https://broker.example.com", 443);
-    createBinding(unrelatedCertificateId, otherAssetId, BindingType.DEVICE_CERT, null, null);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        assetId,
+        BindingType.MQTT_ENDPOINT,
+        "mqtt.example.com",
+        8883);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        otherCertificateId,
+        assetId,
+        BindingType.HTTPS_ENDPOINT,
+        "https://broker.example.com",
+        443);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        unrelatedCertificateId,
+        otherAssetId,
+        BindingType.DEVICE_CERT,
+        null,
+        null);
 
     mockMvc.perform(get("/api/assets/{assetId}/certificates", assetId))
         .andExpect(status().isOk())
@@ -294,40 +348,5 @@ class AssetControllerIntegrationTest {
         .andExpect(jsonPath("$.error").value("Not Found"))
         .andExpect(jsonPath("$.message").value("Asset not found: " + missingAssetId))
         .andExpect(jsonPath("$.path").value("/api/assets/" + missingAssetId + "/certificates"));
-  }
-
-  private UUID createAssetAndReturnId() throws Exception {
-    return AssetFixtures.createAndReturnId(mockMvc, objectMapper);
-  }
-
-  private UUID createAssetAndReturnId(String tenantId, String name) throws Exception {
-    return AssetFixtures.createAndReturnId(
-        mockMvc,
-        objectMapper,
-        AssetFixtures.validCreateRequest(tenantId, name));
-  }
-
-  private UUID createCertificateAndReturnId() throws Exception {
-    return CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
-  }
-
-  private UUID createCertificateAndReturnId(String name) throws Exception {
-    return CertificateFixtures.createAndReturnId(
-        mockMvc,
-        objectMapper,
-        CertificateFixtures.validCreateRequest(name));
-  }
-
-  private void createBinding(
-      UUID certificateId,
-      UUID assetId,
-      BindingType bindingType,
-      String endpoint,
-      Integer port) throws Exception {
-    CertificateBindingFixtures.create(
-        mockMvc,
-        objectMapper,
-        certificateId,
-        CertificateBindingFixtures.validCreateRequest(assetId, bindingType, endpoint, port));
   }
 }

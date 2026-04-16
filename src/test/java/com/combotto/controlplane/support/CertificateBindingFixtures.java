@@ -54,6 +54,21 @@ public final class CertificateBindingFixtures {
         .andExpect(status().isCreated());
   }
 
+  public static void create(
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
+      UUID certificateId,
+      UUID assetId,
+      BindingType bindingType,
+      String endpoint,
+      Integer port) throws Exception {
+    create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        validCreateRequest(assetId, bindingType, endpoint, port));
+  }
+
   public static UUID createAndReturnId(
       MockMvc mockMvc,
       ObjectMapper objectMapper,
