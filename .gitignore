@@ -48,3 +48,6 @@ application-local.properties
 
 # Beads / local issue state
 .beads/
+
+# Local tooling
+.bloop/

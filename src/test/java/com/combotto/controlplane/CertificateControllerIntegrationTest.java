@@ -31,6 +31,7 @@ import com.combotto.controlplane.api.CreateCertificateRequest;
 import com.combotto.controlplane.model.CertificateStatus;
 import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
+import com.combotto.controlplane.support.CertificateFixtures;
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
@@ -65,7 +66,7 @@ class CertificateControllerIntegrationTest {
   void create_returns201_location_body_and_persistsCertificate() throws Exception {
     String responseBody = mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(validCreateRequestJson()))
+        .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated())
         .andExpect(header().string("Location", org.hamcrest.Matchers.matchesPattern(".*/api/certificates/.*")))
         .andExpect(jsonPath("$.tenantId").value("demo-tenant"))
@@ -146,12 +147,12 @@ class CertificateControllerIntegrationTest {
   void list_returns200_andAllCertificates() throws Exception {
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(validCreateRequestJson()))
+        .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(validCreateRequest(
+        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
             "demo-tenant",
             "Gateway Client Certificate",
             "gateway.example.com",
@@ -183,12 +184,12 @@ class CertificateControllerIntegrationTest {
   void list_returns200_andOnlyTenantIdCerts() throws Exception {
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(validCreateRequestJson()))
+        .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(validCreateRequest(
+        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
             "test-tenant",
             "Gateway Client Certificate",
             "gateway.example.com",
@@ -217,12 +218,12 @@ class CertificateControllerIntegrationTest {
   void list_returns200_andOnlyCertificateStatusActive() throws Exception {
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(validCreateRequestJson()))
+        .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(validCreateRequest(
+        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
             "test-tenant",
             "Gateway Client Certificate",
             "gateway.example.com",
@@ -251,12 +252,12 @@ class CertificateControllerIntegrationTest {
   void list_returns200_andOnlyRenewalStatusInProgress() throws Exception {
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(validCreateRequestJson()))
+        .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(validCreateRequest(
+        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
             "test-tenant",
             "Gateway Client Certificate",
             "gateway.example.com",
@@ -285,7 +286,7 @@ class CertificateControllerIntegrationTest {
   void list_returns200_whenMultipleFiltersAreCombined() throws Exception {
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(validCreateRequest(
+        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
             "demo-tenant",
             "Matching Certificate",
             "match.example.com",
@@ -302,7 +303,7 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(validCreateRequest(
+        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
             "demo-tenant",
             "Wrong Renewal",
             "renewal.example.com",
@@ -319,7 +320,7 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(validCreateRequest(
+        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
             "other-tenant",
             "Wrong Tenant",
             "tenant.example.com",
@@ -350,12 +351,12 @@ class CertificateControllerIntegrationTest {
   void list_returnsAllCertificates_whenTenantIdFilterIsEmptyString() throws Exception {
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(validCreateRequestJson()))
+        .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(validCreateRequest(
+        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
             "other-tenant",
             "Gateway Client Certificate",
             "gateway.example.com",
@@ -432,58 +433,76 @@ class CertificateControllerIntegrationTest {
     assertThat(certificateRepository.existsById(id)).isFalse();
   }
 
-  private CreateCertificateRequest validCreateRequest() {
-    return validCreateRequest(
+  @Test
+  void summary_returns200_andCertificateSummary() throws Exception {
+    OffsetDateTime now = OffsetDateTime.now();
+
+    CreateCertificateRequest activeCertificate = CertificateFixtures.validCreateRequest(
         "demo-tenant",
-        "Broker TLS Certificate",
-        "mqtt.example.com",
+        "Active Broker Certificate",
+        "active.example.com",
         "Let's Encrypt",
-        "123456789",
-        "AB:CD:EF:12:34",
-        OffsetDateTime.parse("2026-04-01T00:00:00Z"),
-        OffsetDateTime.parse("2026-07-01T00:00:00Z"),
+        "111111111",
+        "AA:AA:AA:AA",
+        now.minusDays(30),
+        now.plusDays(60),
         CertificateStatus.ACTIVE,
         RenewalStatus.NOT_STATUS,
         "thomas",
-        "first certificate");
+        "counts toward total and active");
+
+    CreateCertificateRequest expiringSoonCertificate = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Expiring Soon Gateway Certificate",
+        "expiring.example.com",
+        "Combotto CA",
+        "222222222",
+        "BB:BB:BB:BB",
+        now.minusDays(10),
+        now.plusDays(10),
+        CertificateStatus.EXPIRING_SOON,
+        RenewalStatus.PLANNED,
+        "platform-team",
+        "counts toward total and expiringSoon");
+
+    CreateCertificateRequest renewalInProgressCertificate = CertificateFixtures.validCreateRequest(
+        "demo-tenant",
+        "Renewal In Progress Certificate",
+        "renewal.example.com",
+        "Combotto CA",
+        "333333333",
+        "CC:CC:CC:CC",
+        now.minusDays(5),
+        now.plusDays(60),
+        CertificateStatus.EXPIRING_SOON,
+        RenewalStatus.IN_PROGRESS,
+        "platform-team",
+        "counts toward total and renewalProgress");
+
+    createCertificate(activeCertificate);
+    createCertificate(expiringSoonCertificate);
+    createCertificate(renewalInProgressCertificate);
+
+    mockMvc.perform(get("/api/certificates/summary"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.total").value(3))
+        .andExpect(jsonPath("$.active").value(1))
+        .andExpect(jsonPath("$.expiredSoon").value(1))
+        .andExpect(jsonPath("$.expired").value(0))
+        .andExpect(jsonPath("$.renewalProgress").value(1));
   }
 
-  private CreateCertificateRequest validCreateRequest(
-      String tenantId,
-      String name,
-      String commonName,
-      String issuer,
-      String serialNumber,
-      String sha256Fingerprint,
-      OffsetDateTime notBefore,
-      OffsetDateTime notAfter,
-      CertificateStatus status,
-      RenewalStatus renewalStatus,
-      String owner,
-      String notes) {
-    return new CreateCertificateRequest(
-        tenantId,
-        name,
-        commonName,
-        issuer,
-        serialNumber,
-        sha256Fingerprint,
-        notBefore,
-        notAfter,
-        status,
-        renewalStatus,
-        owner,
-        notes);
-  }
-
-  private String validCreateRequestJson() throws Exception {
-    return objectMapper.writeValueAsString(validCreateRequest());
+  private void createCertificate(CreateCertificateRequest request) throws Exception {
+    mockMvc.perform(post("/api/certificates")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated());
   }
 
   private UUID createCertificateAndReturnId() throws Exception {
     String responseBody = mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(validCreateRequestJson()))
+        .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated())
         .andReturn()
         .getResponse()

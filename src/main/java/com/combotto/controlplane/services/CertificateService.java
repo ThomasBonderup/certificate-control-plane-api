@@ -1,6 +1,7 @@
 package com.combotto.controlplane.services;
 
 import com.combotto.controlplane.api.CertificateResponse;
+import com.combotto.controlplane.api.CertificateSummaryResponse;
 import com.combotto.controlplane.api.CreateCertificateRequest;
 import com.combotto.controlplane.api.UpdateCertificateRequest;
 import com.combotto.controlplane.common.ResourceNotFoundException;
@@ -103,6 +104,18 @@ public class CertificateService {
       throw new ResourceNotFoundException("Certificate not found: " + id);
     }
     certificateRepository.deleteById(id);
+  }
+
+  public CertificateSummaryResponse summary() {
+    OffsetDateTime now = OffsetDateTime.now();
+    OffsetDateTime soon = now.plusDays(30);
+
+    return new CertificateSummaryResponse(
+        certificateRepository.count(),
+        certificateRepository.countByStatus(CertificateStatus.ACTIVE),
+        certificateRepository.countExpiringSoon(now, soon),
+        certificateRepository.countByStatus(CertificateStatus.EXPIRED),
+        certificateRepository.countByRenewalStatus(RenewalStatus.IN_PROGRESS));
   }
 
   public CertificateResponse toResponse(CertificateEntity entity) {
