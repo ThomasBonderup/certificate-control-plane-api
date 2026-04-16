@@ -177,50 +177,18 @@ class CertificateBindingControllerIntegrationTest {
   }
 
   private UUID createCertificateAndReturnId() throws Exception {
-    String responseBody = mockMvc.perform(post("/api/certificates")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode body = objectMapper.readTree(responseBody);
-    return UUID.fromString(body.get("id").asString());
+    return CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
   }
 
   private UUID createAssetAndReturnId() throws Exception {
-    String responseBody = mockMvc.perform(post("/api/assets")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(AssetFixtures.validCreateRequestJson(objectMapper)))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode body = objectMapper.readTree(responseBody);
-    return UUID.fromString(body.get("id").asString());
+    return AssetFixtures.createAndReturnId(mockMvc, objectMapper);
   }
 
   private UUID createAssetAndReturnId(String tenantId, String name) throws Exception {
-    String responseBody = mockMvc.perform(post("/api/assets")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(AssetFixtures.validCreateRequestJson(
-            objectMapper,
-            AssetFixtures.validCreateRequest(
-                tenantId,
-                name,
-                com.combotto.controlplane.model.AssetType.GATEWAY,
-                "production",
-                name.toLowerCase().replace(" ", "-") + ".example.com",
-                "eu-west-1"))))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode body = objectMapper.readTree(responseBody);
-    return UUID.fromString(body.get("id").asString());
+    return AssetFixtures.createAndReturnId(
+        mockMvc,
+        objectMapper,
+        AssetFixtures.validCreateRequest(tenantId, name));
   }
 
   private void createBinding(
@@ -229,11 +197,10 @@ class CertificateBindingControllerIntegrationTest {
       BindingType bindingType,
       String endpoint,
       Integer port) throws Exception {
-    mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(CertificateBindingFixtures.validCreateRequestJson(
-            objectMapper,
-            CertificateBindingFixtures.validCreateRequest(assetId, bindingType, endpoint, port))))
-        .andExpect(status().isCreated());
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        CertificateBindingFixtures.validCreateRequest(assetId, bindingType, endpoint, port));
   }
 }

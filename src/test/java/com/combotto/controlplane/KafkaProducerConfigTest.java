@@ -7,28 +7,19 @@ import java.util.Map;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.ProducerFactory;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import com.combotto.controlplane.repositories.CertificateRepository;
+import com.combotto.controlplane.setup.KafkaProducerConfig;
 
-@SpringBootTest(properties = {
-    "spring.kafka.bootstrap-servers=test-broker:19092",
-    "spring.flyway.enabled=false",
-    "spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,"
-        + "org.springframework.boot.jdbc.autoconfigure.DataSourceInitializationAutoConfiguration,"
-        + "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration,"
-        + "org.springframework.boot.data.jpa.autoconfigure.DataJpaRepositoriesAutoConfiguration"
-})
+@SpringJUnitConfig(KafkaProducerConfig.class)
+@TestPropertySource(properties = "spring.kafka.bootstrap-servers=test-broker:19092")
 class KafkaProducerConfigTest {
 
   @Autowired
   ProducerFactory<?, ?> producerFactory;
-
-  @MockitoBean
-  CertificateRepository certificateRepository;
 
   @Test
   void producerFactoryUsesConfiguredBootstrapServers() {

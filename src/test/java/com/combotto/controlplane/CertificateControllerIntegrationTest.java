@@ -493,22 +493,10 @@ class CertificateControllerIntegrationTest {
   }
 
   private void createCertificate(CreateCertificateRequest request) throws Exception {
-    mockMvc.perform(post("/api/certificates")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isCreated());
+    CertificateFixtures.create(mockMvc, objectMapper, request);
   }
 
   private UUID createCertificateAndReturnId() throws Exception {
-    String responseBody = mockMvc.perform(post("/api/certificates")
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode body = objectMapper.readTree(responseBody);
-    return UUID.fromString(body.get("id").asString());
+    return CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
   }
 }

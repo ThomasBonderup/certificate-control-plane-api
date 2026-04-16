@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import com.combotto.controlplane.api.AssetResponse;
 import com.combotto.controlplane.api.CreateAssetRequest;
+import com.combotto.controlplane.api.UpdateAssetRequest;
 import com.combotto.controlplane.common.ResourceNotFoundException;
 import com.combotto.controlplane.model.AssetEntity;
 import com.combotto.controlplane.repositories.AssetRepository;
@@ -50,6 +51,33 @@ public class AssetService {
     AssetEntity entity = assetRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Asset not found: " + id));
     return toResponse(entity);
+  }
+
+  public AssetResponse update(UUID id, UpdateAssetRequest request) {
+    AssetEntity entity = assetRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Asset not found: " + id));
+
+    if (request.name() != null)
+      entity.setName(request.name());
+    if (request.assetType() != null)
+      entity.setAssetType(request.assetType());
+    if (request.environment() != null)
+      entity.setEnvironment(request.environment());
+    if (request.hostname() != null)
+      entity.setHostname(request.hostname());
+    if (request.location() != null)
+      entity.setLocation(request.location());
+
+    entity.setUpdatedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS));
+
+    return toResponse(assetRepository.save(entity));
+  }
+
+  public void delete(UUID id) {
+    if (!assetRepository.existsById(id)) {
+      throw new ResourceNotFoundException("Asset not found: " + id);
+    }
+    assetRepository.deleteById(id);
   }
 
   private AssetResponse toResponse(AssetEntity entity) {
