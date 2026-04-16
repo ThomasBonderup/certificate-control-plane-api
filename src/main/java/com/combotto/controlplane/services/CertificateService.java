@@ -64,6 +64,16 @@ public class CertificateService {
         .toList();
   }
 
+  public List<CertificateResponse> listExpiringSoon(int days) {
+    OffsetDateTime now = OffsetDateTime.now();
+    OffsetDateTime threshold = now.plusDays(days);
+
+    return certificateRepository.findExpiringSoon(now, threshold)
+        .stream()
+        .map(certificateMapper::toResponse)
+        .toList();
+  }
+
   public CertificateResponse getById(UUID id) {
     CertificateEntity entity = certificateRepository.findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + id));

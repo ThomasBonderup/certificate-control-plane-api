@@ -60,6 +60,12 @@ public class CertificateController {
     return certificateService.list(tenantId, status, renewalStatus);
   }
 
+  @GetMapping("/expiring-soon")
+  public List<CertificateResponse> listExpiringSoon(
+      @RequestParam(defaultValue = "30") int days) {
+    return certificateService.listExpiringSoon(days);
+  }
+
   @GetMapping("/{id}")
   public CertificateResponse getById(@PathVariable UUID id) {
     return certificateService.getById(id);
