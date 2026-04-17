@@ -30,9 +30,12 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-combotto_control_plane}
       SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-devuser}
       SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      AUTH_ISSUER_URI: http://localhost:${KEYCLOAK_HOST_PORT:-9000}/realms/combotto
+      AUTH_JWK_SET_URI: http://keycloak:8080/realms/combotto/protocol/openid-connect/certs
     depends_on:
       - kafka
       - postgres
+      - keycloak
 
   kafka-ui:
     image: kafbat/kafka-ui:main
@@ -59,6 +62,22 @@ services:
       - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - combotto_control_plane_postgres:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.6.1
+    container_name: combotto-keycloak
+    ports:
+      - "127.0.0.1:${KEYCLOAK_HOST_PORT:-9000}:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KEYCLOAK_DEV_CLIENT_SECRET: ${KEYCLOAK_DEV_CLIENT_SECRET:-change-me-client-secret}
+      KEYCLOAK_DEV_USER_PASSWORD: ${KEYCLOAK_DEV_USER_PASSWORD:-change-me-user-password}
+    volumes:
+      - ./keycloak/import:/opt/keycloak/data/import
+    command:
+      - start-dev
+      - --import-realm
 
 volumes:
   combotto_control_plane_postgres:

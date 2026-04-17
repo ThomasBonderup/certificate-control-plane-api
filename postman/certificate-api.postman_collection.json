@@ -5,10 +5,36 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "description": "Manual API checks for the certificate endpoints in the Combotto Control Plane service."
   },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
   "variable": [
     {
       "key": "baseUrl",
       "value": "http://localhost:8080"
+    },
+    {
+      "key": "keycloakBaseUrl",
+      "value": "http://localhost:9000"
+    },
+    {
+      "key": "realm",
+      "value": "combotto"
+    },
+    {
+      "key": "clientId",
+      "value": "control-plane-api-cli"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
     },
     {
       "key": "certificateId",
@@ -20,6 +46,87 @@
     }
   ],
   "item": [
+    {
+      "name": "Get Access Token",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "password",
+              "type": "text"
+            },
+            {
+              "key": "client_id",
+              "value": "{{clientId}}",
+              "type": "text"
+            },
+            {
+              "key": "client_secret",
+              "value": "{{clientSecret}}",
+              "type": "text"
+            },
+            {
+              "key": "username",
+              "value": "{{username}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{password}}",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+          "host": [
+            "{{keycloakBaseUrl}}"
+          ],
+          "path": [
+            "realms",
+            "{{realm}}",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        },
+        "description": "Gets a Keycloak access token and stores it into the collection variable `accessToken`. Set `username`, `password`, and `clientSecret` in your active Postman environment."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "var body = pm.response.json();",
+              "pm.test(\"access token is present\", function () {",
+              "  pm.expect(body.access_token).to.be.a(\"string\").and.not.empty;",
+              "});",
+              "",
+              "if (body && body.access_token) {",
+              "  pm.collectionVariables.set(\"accessToken\", body.access_token);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
     {
       "name": "Create Certificate",
       "request": {

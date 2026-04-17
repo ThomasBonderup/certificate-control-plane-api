@@ -32,6 +32,7 @@ import com.combotto.controlplane.model.CertificateStatus;
 import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
 import com.combotto.controlplane.support.CertificateFixtures;
+import static com.combotto.controlplane.support.SecurityTestSupport.authenticated;
 
 @Testcontainers(disabledWithoutDocker = true)
 @SpringBootTest
@@ -65,6 +66,7 @@ class CertificateControllerIntegrationTest {
   @Test
   void create_returns201_location_body_and_persistsCertificate() throws Exception {
     String responseBody = mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated())
@@ -106,6 +108,7 @@ class CertificateControllerIntegrationTest {
         """;
 
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(requestBody))
         .andExpect(status().isBadRequest())
@@ -118,7 +121,8 @@ class CertificateControllerIntegrationTest {
   void getById_returns200_andBody() throws Exception {
     UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
 
-    mockMvc.perform(get("/api/certificates/{id}", id))
+    mockMvc.perform(get("/api/certificates/{id}", id)
+        .with(authenticated()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(id.toString()))
         .andExpect(jsonPath("$.tenantId").value("demo-tenant"))
@@ -135,7 +139,8 @@ class CertificateControllerIntegrationTest {
   void getById_returns404_whenCertificateDoesNotExist() throws Exception {
     UUID missingId = UUID.randomUUID();
 
-    mockMvc.perform(get("/api/certificates/{id}", missingId))
+    mockMvc.perform(get("/api/certificates/{id}", missingId)
+        .with(authenticated()))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.status").value(404))
         .andExpect(jsonPath("$.error").value("Not Found"))
@@ -146,11 +151,13 @@ class CertificateControllerIntegrationTest {
   @Test
   void list_returns200_andAllCertificates() throws Exception {
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "demo-tenant",
@@ -167,7 +174,8 @@ class CertificateControllerIntegrationTest {
             "second certificate"))))
         .andExpect(status().isCreated());
 
-    mockMvc.perform(get("/api/certificates"))
+    mockMvc.perform(get("/api/certificates")
+        .with(authenticated()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(2))
         .andExpect(jsonPath("$.totalElements").value(2))
@@ -187,11 +195,13 @@ class CertificateControllerIntegrationTest {
   @Test
   void list_returns200_andOnlyTenantIdCerts() throws Exception {
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "test-tenant",
@@ -209,6 +219,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(get("/api/certificates")
+        .with(authenticated())
         .param("tenantId", "demo-tenant"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(1))
@@ -222,11 +233,13 @@ class CertificateControllerIntegrationTest {
   @Test
   void list_returns200_andOnlyCertificateStatusActive() throws Exception {
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "test-tenant",
@@ -244,6 +257,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(get("/api/certificates")
+        .with(authenticated())
         .param("status", "ACTIVE"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(1))
@@ -257,11 +271,13 @@ class CertificateControllerIntegrationTest {
   @Test
   void list_returns200_andOnlyRenewalStatusInProgress() throws Exception {
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "test-tenant",
@@ -279,6 +295,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(get("/api/certificates")
+        .with(authenticated())
         .param("renewalStatus", "IN_PROGRESS"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(1))
@@ -292,6 +309,7 @@ class CertificateControllerIntegrationTest {
   @Test
   void list_returns200_whenMultipleFiltersAreCombined() throws Exception {
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "demo-tenant",
@@ -309,6 +327,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "demo-tenant",
@@ -326,6 +345,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "other-tenant",
@@ -343,6 +363,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(get("/api/certificates")
+        .with(authenticated())
         .param("tenantId", "demo-tenant")
         .param("status", "ACTIVE")
         .param("renewalStatus", "IN_PROGRESS"))
@@ -358,11 +379,13 @@ class CertificateControllerIntegrationTest {
   @Test
   void list_returnsAllCertificates_whenTenantIdFilterIsEmptyString() throws Exception {
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "other-tenant",
@@ -380,6 +403,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(get("/api/certificates")
+        .with(authenticated())
         .param("tenantId", ""))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(2))
@@ -435,6 +459,7 @@ class CertificateControllerIntegrationTest {
         "second certificate"));
 
     mockMvc.perform(get("/api/certificates")
+        .with(authenticated())
         .param("page", "0")
         .param("size", "2")
         .param("sort", "notAfter,asc"))
@@ -492,6 +517,7 @@ class CertificateControllerIntegrationTest {
         "third certificate"));
 
     mockMvc.perform(get("/api/certificates")
+        .with(authenticated())
         .param("page", "1")
         .param("size", "2")
         .param("sort", "notAfter,asc"))
@@ -550,6 +576,7 @@ class CertificateControllerIntegrationTest {
         "expires second"));
 
     mockMvc.perform(get("/api/certificates")
+        .with(authenticated())
         .param("sort", "notAfter,asc"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(3))
@@ -617,6 +644,7 @@ class CertificateControllerIntegrationTest {
         "active third"));
 
     mockMvc.perform(get("/api/certificates")
+        .with(authenticated())
         .param("status", "ACTIVE")
         .param("page", "0")
         .param("size", "2")
@@ -637,6 +665,7 @@ class CertificateControllerIntegrationTest {
   @Test
   void list_returns400_whenStatusFilterHasInvalidEnumValue() throws Exception {
     mockMvc.perform(get("/api/certificates")
+        .with(authenticated())
         .param("status", "INVALID_STATUS"))
         .andExpect(status().isBadRequest())
         .andExpect(jsonPath("$.status").value(400))
@@ -711,7 +740,8 @@ class CertificateControllerIntegrationTest {
     CertificateFixtures.create(mockMvc, objectMapper, outsideWindow);
     CertificateFixtures.create(mockMvc, objectMapper, alreadyExpired);
 
-    mockMvc.perform(get("/api/certificates/expiring-soon"))
+    mockMvc.perform(get("/api/certificates/expiring-soon")
+        .with(authenticated()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(2))
         .andExpect(jsonPath("$.totalElements").value(2))
@@ -818,6 +848,7 @@ class CertificateControllerIntegrationTest {
     CertificateFixtures.create(mockMvc, objectMapper, outsideDaysWindow);
 
     mockMvc.perform(get("/api/certificates/expiring-soon")
+        .with(authenticated())
         .param("days", "10")
         .param("tenantId", "demo-tenant")
         .param("owner", "platform-team")
@@ -880,6 +911,7 @@ class CertificateControllerIntegrationTest {
         "middle expiring"));
 
     mockMvc.perform(get("/api/certificates/expiring-soon")
+        .with(authenticated())
         .param("page", "0")
         .param("size", "2")
         .param("sort", "name,asc"))
@@ -893,6 +925,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(jsonPath("$.content[1].name").value("Middle Expiring"));
 
     mockMvc.perform(get("/api/certificates/expiring-soon")
+        .with(authenticated())
         .param("page", "1")
         .param("size", "2")
         .param("sort", "name,asc"))
@@ -1043,7 +1076,8 @@ class CertificateControllerIntegrationTest {
     CertificateFixtures.create(mockMvc, objectMapper, laterPlanned);
     CertificateFixtures.create(mockMvc, objectMapper, expiringSoonCompletedOwned);
 
-    mockMvc.perform(get("/api/certificates/attention-needed"))
+    mockMvc.perform(get("/api/certificates/attention-needed")
+        .with(authenticated()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(6))
         .andExpect(jsonPath("$.totalElements").value(6))
@@ -1103,6 +1137,7 @@ class CertificateControllerIntegrationTest {
         "middle attention"));
 
     mockMvc.perform(get("/api/certificates/attention-needed")
+        .with(authenticated())
         .param("page", "0")
         .param("size", "2")
         .param("sort", "name,asc"))
@@ -1116,6 +1151,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(jsonPath("$.content[1].name").value("Middle Attention"));
 
     mockMvc.perform(get("/api/certificates/attention-needed")
+        .with(authenticated())
         .param("page", "1")
         .param("size", "2")
         .param("sort", "name,asc"))
@@ -1141,6 +1177,7 @@ class CertificateControllerIntegrationTest {
         """;
 
     mockMvc.perform(patch("/api/certificates/{id}", id)
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(updateRequest))
         .andExpect(status().isOk())
@@ -1161,7 +1198,8 @@ class CertificateControllerIntegrationTest {
   void delete_returns204_andRemovesCertificate() throws Exception {
     UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
 
-    mockMvc.perform(delete("/api/certificates/{id}", id))
+    mockMvc.perform(delete("/api/certificates/{id}", id)
+        .with(authenticated()))
         .andExpect(status().isNoContent());
 
     assertThat(certificateRepository.existsById(id)).isFalse();
@@ -1217,7 +1255,8 @@ class CertificateControllerIntegrationTest {
     CertificateFixtures.create(mockMvc, objectMapper, expiringSoonCertificate);
     CertificateFixtures.create(mockMvc, objectMapper, renewalInProgressCertificate);
 
-    mockMvc.perform(get("/api/certificates/summary"))
+    mockMvc.perform(get("/api/certificates/summary")
+        .with(authenticated()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.total").value(3))
         .andExpect(jsonPath("$.active").value(1))

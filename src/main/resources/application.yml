@@ -17,6 +17,13 @@ management:
       enabled: true
 
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${AUTH_ISSUER_URI:http://localhost:9000/realms/combotto}
+          jwk-set-uri: ${AUTH_JWK_SET_URI:http://localhost:9000/realms/combotto/protocol/openid-connect/certs}
+
   kafka:
     bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:

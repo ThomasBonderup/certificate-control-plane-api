@@ -1,6 +1,7 @@
 package com.combotto.controlplane;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.security.oauth2.server.resource.autoconfigure.servlet.OAuth2ResourceServerAutoConfiguration;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -25,7 +26,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@WebMvcTest(AuditRunController.class)
+@WebMvcTest(
+    value = AuditRunController.class,
+    excludeAutoConfiguration = {
+        OAuth2ResourceServerAutoConfiguration.class
+    })
 @Import({AuditRunService.class, AuditRunIntegrationTest.TestAuditRunConfig.class})
 public class AuditRunIntegrationTest {
 
