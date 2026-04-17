@@ -3,7 +3,7 @@
     "_postman_id": "d4c6d9f8-2f8d-4dbe-9d7f-2f6df05f4c25",
     "name": "Combotto Control Plane Certificate API",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Manual API checks for the certificate endpoints in the Combotto Control Plane service."
+    "description": "Manual API checks for the certificate endpoints in the Combotto Control Plane service. Includes a small authorization walkthrough so you can see 401 versus authenticated requests and inspect JWT scopes."
   },
   "auth": {
     "type": "bearer",
@@ -29,11 +29,19 @@
       "value": "combotto"
     },
     {
-      "key": "clientId",
-      "value": "control-plane-api-cli"
+      "key": "activeTokenProfile",
+      "value": ""
     },
     {
       "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "accessTokenScope",
+      "value": ""
+    },
+    {
+      "key": "accessTokenSubject",
       "value": ""
     },
     {
@@ -47,7 +55,7 @@
   ],
   "item": [
     {
-      "name": "Get Access Token",
+      "name": "Get Read Token",
       "request": {
         "auth": {
           "type": "noauth"
@@ -69,22 +77,22 @@
             },
             {
               "key": "client_id",
-              "value": "{{clientId}}",
+              "value": "{{readClientId}}",
               "type": "text"
             },
             {
               "key": "client_secret",
-              "value": "{{clientSecret}}",
+              "value": "{{readClientSecret}}",
               "type": "text"
             },
             {
               "key": "username",
-              "value": "{{username}}",
+              "value": "{{readUsername}}",
               "type": "text"
             },
             {
               "key": "password",
-              "value": "{{password}}",
+              "value": "{{readPassword}}",
               "type": "text"
             }
           ]
@@ -102,7 +110,7 @@
             "token"
           ]
         },
-        "description": "Gets a Keycloak access token and stores it into the collection variable `accessToken`. Set `username`, `password`, and `clientSecret` in your active Postman environment."
+        "description": "Gets a read-only Keycloak access token and stores it into the collection variables `accessToken`, `accessTokenScope`, and `accessTokenSubject`."
       },
       "event": [
         {
@@ -110,6 +118,13 @@
           "script": {
             "type": "text/javascript",
             "exec": [
+              "function decodeJwtPayload(token) {",
+              "  var encodedPayload = token.split('.')[1];",
+              "  var base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');",
+              "  var padded = base64.padEnd(base64.length + ((4 - base64.length % 4) % 4), '=');",
+              "  return JSON.parse(atob(padded));",
+              "}",
+              "",
               "pm.test(\"status is 200\", function () {",
               "  pm.response.to.have.status(200);",
               "});",
@@ -121,7 +136,261 @@
               "",
               "if (body && body.access_token) {",
               "  pm.collectionVariables.set(\"accessToken\", body.access_token);",
+              "  var payload = decodeJwtPayload(body.access_token);",
+              "  pm.collectionVariables.set(\"accessTokenScope\", payload.scope || \"\");",
+              "  pm.collectionVariables.set(\"accessTokenSubject\", payload.sub || \"\");",
+              "  pm.collectionVariables.set(\"activeTokenProfile\", \"read\");",
+              "  console.log(\"JWT subject:\", payload.sub || \"<missing>\");",
+              "  console.log(\"JWT scopes:\", payload.scope || \"<missing>\");",
               "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Write Token",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "password",
+              "type": "text"
+            },
+            {
+              "key": "client_id",
+              "value": "{{writeClientId}}",
+              "type": "text"
+            },
+            {
+              "key": "client_secret",
+              "value": "{{writeClientSecret}}",
+              "type": "text"
+            },
+            {
+              "key": "username",
+              "value": "{{writeUsername}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{writePassword}}",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+          "host": [
+            "{{keycloakBaseUrl}}"
+          ],
+          "path": [
+            "realms",
+            "{{realm}}",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        },
+        "description": "Gets a write-only Keycloak access token and stores it into the collection variables `accessToken`, `accessTokenScope`, and `accessTokenSubject`."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function decodeJwtPayload(token) {",
+              "  var encodedPayload = token.split('.')[1];",
+              "  var base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');",
+              "  var padded = base64.padEnd(base64.length + ((4 - base64.length % 4) % 4), '=');",
+              "  return JSON.parse(atob(padded));",
+              "}",
+              "",
+              "pm.test(\"status is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "var body = pm.response.json();",
+              "pm.test(\"access token is present\", function () {",
+              "  pm.expect(body.access_token).to.be.a(\"string\").and.not.empty;",
+              "});",
+              "",
+              "if (body && body.access_token) {",
+              "  pm.collectionVariables.set(\"accessToken\", body.access_token);",
+              "  var payload = decodeJwtPayload(body.access_token);",
+              "  pm.collectionVariables.set(\"accessTokenScope\", payload.scope || \"\");",
+              "  pm.collectionVariables.set(\"accessTokenSubject\", payload.sub || \"\");",
+              "  pm.collectionVariables.set(\"activeTokenProfile\", \"write\");",
+              "  console.log(\"JWT subject:\", payload.sub || \"<missing>\");",
+              "  console.log(\"JWT scopes:\", payload.scope || \"<missing>\");",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authorization Demo - List Certificates Without Token",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/certificates",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "certificates"
+          ]
+        },
+        "description": "Authorization demo. Sends no Bearer token and should return 401 Unauthorized."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 401\", function () {",
+              "  pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authorization Demo - Read Token Cannot Create Certificate",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tenantId\": \"demo-tenant\",\n  \"name\": \"Read Token Should Fail\",\n  \"commonName\": \"read-denied.example.com\",\n  \"issuer\": \"Combotto CA\",\n  \"serialNumber\": \"read-denied-001\",\n  \"sha256Fingerprint\": \"10:11:12:13\",\n  \"notBefore\": \"2026-04-01T00:00:00Z\",\n  \"notAfter\": \"2026-07-01T00:00:00Z\",\n  \"status\": \"ACTIVE\",\n  \"renewalStatus\": \"NOT_STATUS\",\n  \"owner\": \"postman\",\n  \"notes\": \"Should fail with read token\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/certificates",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "certificates"
+          ]
+        },
+        "description": "Authorization demo. Run `Get Read Token` first. This request should return 403 Forbidden because the token only has `controlplane.read`."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 403\", function () {",
+              "  pm.response.to.have.status(403);",
+              "});",
+              "",
+              "console.log(\"Active token profile:\", pm.collectionVariables.get(\"activeTokenProfile\") || \"<unknown>\");",
+              "console.log(\"Access token scopes:\", pm.collectionVariables.get(\"accessTokenScope\") || \"<unknown>\");"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authorization Demo - Write Token Cannot List Certificates",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/certificates",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "certificates"
+          ]
+        },
+        "description": "Authorization demo. Run `Get Write Token` first. This request should return 403 Forbidden because the token only has `controlplane.write`."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 403\", function () {",
+              "  pm.response.to.have.status(403);",
+              "});",
+              "",
+              "console.log(\"Active token profile:\", pm.collectionVariables.get(\"activeTokenProfile\") || \"<unknown>\");",
+              "console.log(\"Access token scopes:\", pm.collectionVariables.get(\"accessTokenScope\") || \"<unknown>\");"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authorization Demo - Create Certificate Without Token",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"tenantId\": \"demo-tenant\",\n  \"name\": \"Unauthorized Certificate Attempt\",\n  \"commonName\": \"unauthorized.example.com\",\n  \"issuer\": \"Combotto CA\",\n  \"serialNumber\": \"unauth-001\",\n  \"sha256Fingerprint\": \"00:11:22:33\",\n  \"notBefore\": \"2026-04-01T00:00:00Z\",\n  \"notAfter\": \"2026-07-01T00:00:00Z\",\n  \"status\": \"ACTIVE\",\n  \"renewalStatus\": \"NOT_STATUS\",\n  \"owner\": \"postman\",\n  \"notes\": \"Should fail without a token\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/certificates",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "certificates"
+          ]
+        },
+        "description": "Authorization demo. Sends no Bearer token and should return 401 Unauthorized."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 401\", function () {",
+              "  pm.response.to.have.status(401);",
+              "});"
             ]
           }
         }
@@ -151,7 +420,7 @@
             "certificates"
           ]
         },
-        "description": "Creates a certificate and stores the returned id into the collection variable `certificateId`."
+        "description": "Creates a certificate and stores the returned id into the collection variable `certificateId`. This should succeed only when the JWT includes `controlplane.write`."
       },
       "event": [
         {
@@ -307,7 +576,51 @@
             "certificates"
           ]
         },
-        "description": "Returns all certificates."
+        "description": "Returns certificates. This should succeed only when the JWT includes `controlplane.read`."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"status is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "console.log(\"Access token scopes:\", pm.collectionVariables.get(\"accessTokenScope\") || \"<unknown>\");",
+              "console.log(\"Access token subject:\", pm.collectionVariables.get(\"accessTokenSubject\") || \"<unknown>\");"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Authorization Notes",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://postman-echo.com/get?note=authorization-walkthrough",
+          "protocol": "https",
+          "host": [
+            "postman-echo",
+            "com"
+          ],
+          "path": [
+            "get"
+          ],
+          "query": [
+            {
+              "key": "note",
+              "value": "authorization-walkthrough"
+            }
+          ]
+        },
+        "description": "Walkthrough: 1) run `Authorization Demo - List Certificates Without Token` to see 401, 2) run `Get Read Token` and inspect `accessTokenScope`, 3) run `List Certificates` for a 200 and `Authorization Demo - Read Token Cannot Create Certificate` for a 403, 4) run `Get Write Token`, 5) run `Create Certificate` for a 201 and `Authorization Demo - Write Token Cannot List Certificates` for a 403."
       },
       "event": [
         {

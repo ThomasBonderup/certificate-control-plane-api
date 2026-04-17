@@ -1,0 +1,109 @@
+{
+  "realm": "combotto",
+  "enabled": true,
+  "displayName": "Combotto Local Dev",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "rememberMe": false,
+  "verifyEmail": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "clientScopes": [
+    {
+      "name": "controlplane.read",
+      "description": "Read access to control plane APIs",
+      "protocol": "openid-connect",
+      "attributes": {
+        "display.on.consent.screen": "false",
+        "include.in.token.scope": "true"
+      },
+      "protocolMappers": []
+    },
+    {
+      "name": "controlplane.write",
+      "description": "Write access to control plane APIs",
+      "protocol": "openid-connect",
+      "attributes": {
+        "display.on.consent.screen": "false",
+        "include.in.token.scope": "true"
+      },
+      "protocolMappers": []
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "${KEYCLOAK_READ_CLIENT_ID}",
+      "name": "Control Plane Read CLI",
+      "description": "Local development client for read-only token generation",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${KEYCLOAK_READ_CLIENT_SECRET}",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": false,
+      "defaultClientScopes": [
+        "controlplane.read"
+      ],
+      "redirectUris": [],
+      "webOrigins": []
+    },
+    {
+      "clientId": "${KEYCLOAK_WRITE_CLIENT_ID}",
+      "name": "Control Plane Write CLI",
+      "description": "Local development client for write-only token generation",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${KEYCLOAK_WRITE_CLIENT_SECRET}",
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": false,
+      "defaultClientScopes": [
+        "controlplane.write"
+      ],
+      "redirectUris": [],
+      "webOrigins": []
+    }
+  ],
+  "users": [
+    {
+      "username": "${KEYCLOAK_READ_USERNAME}",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Local",
+      "lastName": "Reader",
+      "email": "${KEYCLOAK_READ_EMAIL}",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_READ_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-combotto"
+      ]
+    },
+    {
+      "username": "${KEYCLOAK_WRITE_USERNAME}",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Local",
+      "lastName": "Writer",
+      "email": "${KEYCLOAK_WRITE_EMAIL}",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_WRITE_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-combotto"
+      ]
+    }
+  ]
+}

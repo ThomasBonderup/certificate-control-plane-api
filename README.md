@@ -65,40 +65,89 @@ Keycloak is configured for local development on `http://localhost:9000` with a r
 - Realm: `combotto`
 - Admin username: `${KEYCLOAK_ADMIN_USERNAME}`
 - Admin password: `${KEYCLOAK_ADMIN_PASSWORD}`
-- Token client id: `control-plane-api-cli`
-- Token client secret: `${KEYCLOAK_DEV_CLIENT_SECRET}`
-- Test username: `local-dev`
-- Test password: `${KEYCLOAK_DEV_USER_PASSWORD}`
+- Read client id: `${KEYCLOAK_READ_CLIENT_ID}`
+- Read client secret: `${KEYCLOAK_READ_CLIENT_SECRET}`
+- Read test username: `${KEYCLOAK_READ_USERNAME}`
+- Read test password: `${KEYCLOAK_READ_PASSWORD}`
+- Write client id: `${KEYCLOAK_WRITE_CLIENT_ID}`
+- Write client secret: `${KEYCLOAK_WRITE_CLIENT_SECRET}`
+- Write test username: `${KEYCLOAK_WRITE_USERNAME}`
+- Write test password: `${KEYCLOAK_WRITE_PASSWORD}`
 
-Set those values in your local `.env` file by copying `.env.example`.
+The realm file is now a template at [combotto-realm.template.json](/Users/thomaswintherbonderup/Development/combotto-control-plane-api/keycloak/import/combotto-realm.template.json). `docker compose` passes the Keycloak values into the container, a small startup script renders the final realm JSON, and then Keycloak imports that rendered file. This is necessary because Keycloak does not interpolate environment variables directly inside realm import JSON.
 
-Get a local access token:
+Get a local read token:
 
 ```bash
 curl -s \
   -X POST http://localhost:9000/realms/combotto/protocol/openid-connect/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=password' \
-  -d 'client_id=control-plane-api-cli' \
-  -d "client_secret=$KEYCLOAK_DEV_CLIENT_SECRET" \
-  -d 'username=local-dev' \
-  -d "password=$KEYCLOAK_DEV_USER_PASSWORD"
+  -d "client_id=$KEYCLOAK_READ_CLIENT_ID" \
+  -d "client_secret=$KEYCLOAK_READ_CLIENT_SECRET" \
+  -d "username=$KEYCLOAK_READ_USERNAME" \
+  -d "password=$KEYCLOAK_READ_PASSWORD"
 ```
 
-Use the token against the API:
+Get a local write token:
 
 ```bash
-TOKEN="$(curl -s \
+curl -s \
   -X POST http://localhost:9000/realms/combotto/protocol/openid-connect/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=password' \
-  -d 'client_id=control-plane-api-cli' \
-  -d "client_secret=$KEYCLOAK_DEV_CLIENT_SECRET" \
-  -d 'username=local-dev' \
-  -d "password=$KEYCLOAK_DEV_USER_PASSWORD" | jq -r '.access_token')"
+  -d "client_id=$KEYCLOAK_WRITE_CLIENT_ID" \
+  -d "client_secret=$KEYCLOAK_WRITE_CLIENT_SECRET" \
+  -d "username=$KEYCLOAK_WRITE_USERNAME" \
+  -d "password=$KEYCLOAK_WRITE_PASSWORD"
+```
 
-curl -H "Authorization: Bearer $TOKEN" \
+Use the read token against the API:
+
+```bash
+READ_TOKEN="$(curl -s \
+  -X POST http://localhost:9000/realms/combotto/protocol/openid-connect/token \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=password' \
+  -d "client_id=$KEYCLOAK_READ_CLIENT_ID" \
+  -d "client_secret=$KEYCLOAK_READ_CLIENT_SECRET" \
+  -d "username=$KEYCLOAK_READ_USERNAME" \
+  -d "password=$KEYCLOAK_READ_PASSWORD" | jq -r '.access_token')"
+
+curl -H "Authorization: Bearer $READ_TOKEN" \
   http://localhost:8080/api/certificates
+```
+
+Use the write token against the API:
+
+```bash
+WRITE_TOKEN="$(curl -s \
+  -X POST http://localhost:9000/realms/combotto/protocol/openid-connect/token \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=password' \
+  -d "client_id=$KEYCLOAK_WRITE_CLIENT_ID" \
+  -d "client_secret=$KEYCLOAK_WRITE_CLIENT_SECRET" \
+  -d "username=$KEYCLOAK_WRITE_USERNAME" \
+  -d "password=$KEYCLOAK_WRITE_PASSWORD" | jq -r '.access_token')"
+
+curl -X POST \
+  -H "Authorization: Bearer $WRITE_TOKEN" \
+  -H "Content-Type: application/json" \
+  http://localhost:8080/api/certificates \
+  -d '{
+    "tenantId": "demo-tenant",
+    "name": "Writer Demo Certificate",
+    "commonName": "writer.example.com",
+    "issuer": "Combotto CA",
+    "serialNumber": "writer-demo-001",
+    "sha256Fingerprint": "AA:BB:CC:DD",
+    "notBefore": "2026-04-01T00:00:00Z",
+    "notAfter": "2026-07-01T00:00:00Z",
+    "status": "ACTIVE",
+    "renewalStatus": "NOT_STATUS",
+    "owner": "local-writer",
+    "notes": "Write token demo"
+  }'
 ```
 
 ## Postman Setup
@@ -109,21 +158,27 @@ The Postman collection reads login details from environment variables instead of
    - [certificate-api.postman_collection.json](/Users/thomaswintherbonderup/Development/combotto-control-plane-api/postman/certificate-api.postman_collection.json)
    - [local-dev.postman_environment.json](/Users/thomaswintherbonderup/Development/combotto-control-plane-api/postman/local-dev.postman_environment.json)
 2. Select the `Combotto Local Dev` environment in Postman.
-3. Set these environment values:
-   - `clientSecret`
-   - `password`
-4. Run `Get Access Token` in the collection.
-5. Run the API requests normally.
+3. Run `Authorization Demo - List Certificates Without Token` to see `401`.
+4. Run `Get Read Token`, then run:
+   - `List Certificates` and expect `200`
+   - `Authorization Demo - Read Token Cannot Create Certificate` and expect `403`
+5. Run `Get Write Token`, then run:
+   - `Create Certificate` and expect `201`
+   - `Authorization Demo - Write Token Cannot List Certificates` and expect `403`
 
 Expected environment variable names in Postman:
 
 - `baseUrl`
 - `keycloakBaseUrl`
 - `realm`
-- `clientId`
-- `clientSecret`
-- `username`
-- `password`
+- `readClientId`
+- `readClientSecret`
+- `readUsername`
+- `readPassword`
+- `writeClientId`
+- `writeClientSecret`
+- `writeUsername`
+- `writePassword`
 
 ## Features
 

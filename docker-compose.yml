@@ -71,13 +71,23 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-      KEYCLOAK_DEV_CLIENT_SECRET: ${KEYCLOAK_DEV_CLIENT_SECRET:-change-me-client-secret}
-      KEYCLOAK_DEV_USER_PASSWORD: ${KEYCLOAK_DEV_USER_PASSWORD:-change-me-user-password}
+      KEYCLOAK_READ_CLIENT_ID: ${KEYCLOAK_READ_CLIENT_ID:-control-plane-read-cli}
+      KEYCLOAK_READ_CLIENT_SECRET: ${KEYCLOAK_READ_CLIENT_SECRET:-local-dev-read-secret}
+      KEYCLOAK_READ_USERNAME: ${KEYCLOAK_READ_USERNAME:-local-reader}
+      KEYCLOAK_READ_PASSWORD: ${KEYCLOAK_READ_PASSWORD:-local-reader-password}
+      KEYCLOAK_READ_EMAIL: ${KEYCLOAK_READ_EMAIL:-local-reader@example.com}
+      KEYCLOAK_WRITE_CLIENT_ID: ${KEYCLOAK_WRITE_CLIENT_ID:-control-plane-write-cli}
+      KEYCLOAK_WRITE_CLIENT_SECRET: ${KEYCLOAK_WRITE_CLIENT_SECRET:-local-dev-write-secret}
+      KEYCLOAK_WRITE_USERNAME: ${KEYCLOAK_WRITE_USERNAME:-local-writer}
+      KEYCLOAK_WRITE_PASSWORD: ${KEYCLOAK_WRITE_PASSWORD:-local-writer-password}
+      KEYCLOAK_WRITE_EMAIL: ${KEYCLOAK_WRITE_EMAIL:-local-writer@example.com}
     volumes:
-      - ./keycloak/import:/opt/keycloak/data/import
+      - ./keycloak:/opt/keycloak/data/local-config
+    entrypoint:
+      - /bin/sh
+      - -c
     command:
-      - start-dev
-      - --import-realm
+      - sh /opt/keycloak/data/local-config/scripts/render-realm.sh && exec /opt/keycloak/bin/kc.sh start-dev --import-realm
 
 volumes:
   combotto_control_plane_postgres:
