@@ -11,6 +11,7 @@ import com.combotto.controlplane.model.BindingType;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import static com.combotto.controlplane.support.SecurityTestSupport.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -49,6 +50,7 @@ public final class CertificateBindingFixtures {
       UUID certificateId,
       CreateCertificateBindingRequest request) throws Exception {
     mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(validCreateRequestJson(objectMapper, request)))
         .andExpect(status().isCreated());
@@ -83,6 +85,7 @@ public final class CertificateBindingFixtures {
       UUID certificateId,
       CreateCertificateBindingRequest request) throws Exception {
     String responseBody = mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(validCreateRequestJson(objectMapper, request)))
         .andExpect(status().isCreated())

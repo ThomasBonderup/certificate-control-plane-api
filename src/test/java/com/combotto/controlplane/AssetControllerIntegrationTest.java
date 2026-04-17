@@ -30,6 +30,7 @@ import com.combotto.controlplane.repositories.CertificateRepository;
 import com.combotto.controlplane.support.AssetFixtures;
 import com.combotto.controlplane.support.CertificateBindingFixtures;
 import com.combotto.controlplane.support.CertificateFixtures;
+import static com.combotto.controlplane.support.SecurityTestSupport.authenticated;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -74,6 +75,7 @@ class AssetControllerIntegrationTest {
   @Test
   void create_returns201_location_body_and_persistsAsset() throws Exception {
     String responseBody = mockMvc.perform(post("/api/assets")
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(AssetFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated())
@@ -100,7 +102,8 @@ class AssetControllerIntegrationTest {
     AssetFixtures.createAndReturnId(mockMvc, objectMapper);
     AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Broker Asset");
 
-    mockMvc.perform(get("/api/assets"))
+    mockMvc.perform(get("/api/assets")
+        .with(authenticated()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(2))
         .andExpect(jsonPath("$.totalElements").value(2))
@@ -124,6 +127,7 @@ class AssetControllerIntegrationTest {
     AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset B");
 
     mockMvc.perform(get("/api/assets")
+        .with(authenticated())
         .param("page", "0")
         .param("size", "2")
         .param("sort", "name,asc"))
@@ -143,6 +147,7 @@ class AssetControllerIntegrationTest {
     AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset C");
 
     mockMvc.perform(get("/api/assets")
+        .with(authenticated())
         .param("page", "1")
         .param("size", "2")
         .param("sort", "name,asc"))
@@ -163,6 +168,7 @@ class AssetControllerIntegrationTest {
     AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Middle Asset");
 
     mockMvc.perform(get("/api/assets")
+        .with(authenticated())
         .param("sort", "name,asc"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(3))
@@ -175,7 +181,8 @@ class AssetControllerIntegrationTest {
   void getById_returns200_andBody() throws Exception {
     UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
 
-    mockMvc.perform(get("/api/assets/{id}", assetId))
+    mockMvc.perform(get("/api/assets/{id}", assetId)
+        .with(authenticated()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(assetId.toString()))
         .andExpect(jsonPath("$.tenantId").value("demo-tenant"))
@@ -190,7 +197,8 @@ class AssetControllerIntegrationTest {
   void getById_returns404_whenAssetDoesNotExist() throws Exception {
     UUID missingAssetId = UUID.randomUUID();
 
-    mockMvc.perform(get("/api/assets/{id}", missingAssetId))
+    mockMvc.perform(get("/api/assets/{id}", missingAssetId)
+        .with(authenticated()))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.status").value(404))
         .andExpect(jsonPath("$.error").value("Not Found"))
@@ -203,6 +211,7 @@ class AssetControllerIntegrationTest {
     UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
 
     mockMvc.perform(patch("/api/assets/{id}", assetId)
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -235,6 +244,7 @@ class AssetControllerIntegrationTest {
     UUID missingAssetId = UUID.randomUUID();
 
     mockMvc.perform(patch("/api/assets/{id}", missingAssetId)
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -252,7 +262,8 @@ class AssetControllerIntegrationTest {
   void delete_returns204_andRemovesAsset() throws Exception {
     UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
 
-    mockMvc.perform(delete("/api/assets/{id}", assetId))
+    mockMvc.perform(delete("/api/assets/{id}", assetId)
+        .with(authenticated()))
         .andExpect(status().isNoContent());
 
     assertThat(assetRepository.existsById(assetId)).isFalse();
@@ -262,7 +273,8 @@ class AssetControllerIntegrationTest {
   void delete_returns404_whenAssetDoesNotExist() throws Exception {
     UUID missingAssetId = UUID.randomUUID();
 
-    mockMvc.perform(delete("/api/assets/{id}", missingAssetId))
+    mockMvc.perform(delete("/api/assets/{id}", missingAssetId)
+        .with(authenticated()))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.status").value(404))
         .andExpect(jsonPath("$.error").value("Not Found"))
@@ -310,7 +322,8 @@ class AssetControllerIntegrationTest {
         null,
         null);
 
-    mockMvc.perform(get("/api/assets/{assetId}/bindings", assetId))
+    mockMvc.perform(get("/api/assets/{assetId}/bindings", assetId)
+        .with(authenticated()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(2))
         .andExpect(jsonPath("$.totalElements").value(2))
@@ -363,6 +376,7 @@ class AssetControllerIntegrationTest {
         8883);
 
     mockMvc.perform(get("/api/assets/{assetId}/bindings", assetId)
+        .with(authenticated())
         .param("page", "0")
         .param("size", "2")
         .param("sort", "endpoint,asc"))
@@ -376,6 +390,7 @@ class AssetControllerIntegrationTest {
         .andExpect(jsonPath("$.content[1].endpoint").value("bravo.example.com"));
 
     mockMvc.perform(get("/api/assets/{assetId}/bindings", assetId)
+        .with(authenticated())
         .param("page", "1")
         .param("size", "2")
         .param("sort", "endpoint,asc"))
@@ -390,7 +405,8 @@ class AssetControllerIntegrationTest {
   void listBindingsByAssetId_returns404_whenAssetDoesNotExist() throws Exception {
     UUID missingAssetId = UUID.randomUUID();
 
-    mockMvc.perform(get("/api/assets/{assetId}/bindings", missingAssetId))
+    mockMvc.perform(get("/api/assets/{assetId}/bindings", missingAssetId)
+        .with(authenticated()))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.status").value(404))
         .andExpect(jsonPath("$.error").value("Not Found"))
@@ -438,7 +454,8 @@ class AssetControllerIntegrationTest {
         null,
         null);
 
-    mockMvc.perform(get("/api/assets/{assetId}/certificates", assetId))
+    mockMvc.perform(get("/api/assets/{assetId}/certificates", assetId)
+        .with(authenticated()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.length()").value(2))
         .andExpect(jsonPath("$[*].id",
@@ -457,7 +474,8 @@ class AssetControllerIntegrationTest {
   void listCertificatesByAssetId_returns404_whenAssetDoesNotExist() throws Exception {
     UUID missingAssetId = UUID.randomUUID();
 
-    mockMvc.perform(get("/api/assets/{assetId}/certificates", missingAssetId))
+    mockMvc.perform(get("/api/assets/{assetId}/certificates", missingAssetId)
+        .with(authenticated()))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.status").value(404))
         .andExpect(jsonPath("$.error").value("Not Found"))

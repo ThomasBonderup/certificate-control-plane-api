@@ -1,6 +1,7 @@
 package com.combotto.controlplane;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.security.oauth2.server.resource.autoconfigure.servlet.OAuth2ResourceServerAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.test.web.servlet.MockMvc;
@@ -8,7 +9,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(Application.class)
+@WebMvcTest(
+		value = Application.class,
+		excludeAutoConfiguration = {
+				OAuth2ResourceServerAutoConfiguration.class
+		})
 class ApplicationTests {
 
 	@Autowired

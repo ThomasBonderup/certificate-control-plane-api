@@ -28,6 +28,7 @@ import com.combotto.controlplane.repositories.CertificateRepository;
 import com.combotto.controlplane.support.AssetFixtures;
 import com.combotto.controlplane.support.CertificateBindingFixtures;
 import com.combotto.controlplane.support.CertificateFixtures;
+import static com.combotto.controlplane.support.SecurityTestSupport.authenticated;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -75,6 +76,7 @@ class CertificateBindingControllerIntegrationTest {
     UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
 
     String responseBody = mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(CertificateBindingFixtures.validCreateRequestJson(objectMapper, assetId)))
         .andExpect(status().isCreated())
@@ -109,6 +111,7 @@ class CertificateBindingControllerIntegrationTest {
     UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
 
     mockMvc.perform(post("/api/certificates/{certificateId}/bindings", missingCertificateId)
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(CertificateBindingFixtures.validCreateRequestJson(objectMapper, assetId)))
         .andExpect(status().isNotFound())
@@ -124,6 +127,7 @@ class CertificateBindingControllerIntegrationTest {
     UUID missingAssetId = UUID.randomUUID();
 
     mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
+        .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
         .content(CertificateBindingFixtures.validCreateRequestJson(objectMapper, missingAssetId)))
         .andExpect(status().isNotFound())
@@ -174,7 +178,8 @@ class CertificateBindingControllerIntegrationTest {
         null,
         null);
 
-    mockMvc.perform(get("/api/certificates/{certificateId}/bindings", certificateId))
+    mockMvc.perform(get("/api/certificates/{certificateId}/bindings", certificateId)
+        .with(authenticated()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(2))
         .andExpect(jsonPath("$.totalElements").value(2))
@@ -230,6 +235,7 @@ class CertificateBindingControllerIntegrationTest {
         8883);
 
     mockMvc.perform(get("/api/certificates/{certificateId}/bindings", certificateId)
+        .with(authenticated())
         .param("page", "0")
         .param("size", "2")
         .param("sort", "endpoint,asc"))
@@ -275,6 +281,7 @@ class CertificateBindingControllerIntegrationTest {
         8883);
 
     mockMvc.perform(get("/api/certificates/{certificateId}/bindings", certificateId)
+        .with(authenticated())
         .param("page", "1")
         .param("size", "2")
         .param("sort", "endpoint,asc"))
@@ -321,6 +328,7 @@ class CertificateBindingControllerIntegrationTest {
         8883);
 
     mockMvc.perform(get("/api/certificates/{certificateId}/bindings", certificateId)
+        .with(authenticated())
         .param("sort", "endpoint,asc"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(3))
@@ -333,7 +341,8 @@ class CertificateBindingControllerIntegrationTest {
   void listByCertificateId_returns404_whenCertificateDoesNotExist() throws Exception {
     UUID missingCertificateId = UUID.randomUUID();
 
-    mockMvc.perform(get("/api/certificates/{certificateId}/bindings", missingCertificateId))
+    mockMvc.perform(get("/api/certificates/{certificateId}/bindings", missingCertificateId)
+        .with(authenticated()))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.status").value(404))
         .andExpect(jsonPath("$.error").value("Not Found"))

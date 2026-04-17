@@ -1,6 +1,7 @@
 package com.combotto.controlplane;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.security.oauth2.server.resource.autoconfigure.servlet.OAuth2ResourceServerAutoConfiguration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -15,7 +16,11 @@ import com.combotto.controlplane.controller.AuditRunController;
 import com.combotto.controlplane.model.AuditRun;
 import com.combotto.controlplane.services.AuditRunService;
 
-@WebMvcTest(AuditRunController.class)
+@WebMvcTest(
+    value = AuditRunController.class,
+    excludeAutoConfiguration = {
+        OAuth2ResourceServerAutoConfiguration.class
+    })
 public class AuditRunControllerTest {
 
   @Autowired
