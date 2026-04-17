@@ -82,12 +82,12 @@ services:
       KEYCLOAK_WRITE_PASSWORD: ${KEYCLOAK_WRITE_PASSWORD:-local-writer-password}
       KEYCLOAK_WRITE_EMAIL: ${KEYCLOAK_WRITE_EMAIL:-local-writer@example.com}
     volumes:
-      - ./keycloak:/opt/keycloak/data/codex
+      - ./keycloak:/opt/keycloak/data/local-config
     entrypoint:
       - /bin/sh
       - -c
     command:
-      - sh /opt/keycloak/data/codex/scripts/render-realm.sh && exec /opt/keycloak/bin/kc.sh start-dev --import-realm
+      - sh /opt/keycloak/data/local-config/scripts/render-realm.sh && exec /opt/keycloak/bin/kc.sh start-dev --import-realm
 
 volumes:
   combotto_control_plane_postgres:

@@ -2,7 +2,7 @@
 
 set -eu
 
-TEMPLATE="/opt/keycloak/data/codex/import/combotto-realm.template.json"
+TEMPLATE="/opt/keycloak/data/local-config/import/combotto-realm.template.json"
 OUTPUT_DIR="/opt/keycloak/data/import"
 OUTPUT_FILE="${OUTPUT_DIR}/combotto-realm.json"
 
