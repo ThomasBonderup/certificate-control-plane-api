@@ -176,23 +176,157 @@ class CertificateBindingControllerIntegrationTest {
 
     mockMvc.perform(get("/api/certificates/{certificateId}/bindings", certificateId))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(2))
-        .andExpect(jsonPath("$[*].certificateId",
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.totalPages").value(1))
+        .andExpect(jsonPath("$.content[*].certificateId",
             org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(certificateId.toString()))))
-        .andExpect(jsonPath("$[*].certificateName",
+        .andExpect(jsonPath("$.content[*].certificateName",
             org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("Broker TLS Certificate"))))
-        .andExpect(jsonPath("$[*].assetId",
+        .andExpect(jsonPath("$.content[*].assetId",
             org.hamcrest.Matchers.containsInAnyOrder(
                 gatewayAssetId.toString(),
                 brokerAssetId.toString())))
-        .andExpect(jsonPath("$[*].assetName",
+        .andExpect(jsonPath("$.content[*].assetName",
             org.hamcrest.Matchers.containsInAnyOrder(
                 "Primary Gateway Asset",
                 "Broker Asset")))
-        .andExpect(jsonPath("$[*].bindingType",
+        .andExpect(jsonPath("$.content[*].bindingType",
             org.hamcrest.Matchers.containsInAnyOrder(
                 "MQTT_ENDPOINT",
                 "HTTPS_ENDPOINT")));
+  }
+
+  @Test
+  void listByCertificateId_respectsRequestedPageSize() throws Exception {
+    UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper, "Broker TLS Certificate");
+    UUID assetCId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset C");
+    UUID assetAId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset A");
+    UUID assetBId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset B");
+
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        assetCId,
+        BindingType.MQTT_ENDPOINT,
+        "charlie.example.com",
+        8883);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        assetAId,
+        BindingType.MQTT_ENDPOINT,
+        "alpha.example.com",
+        8883);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        assetBId,
+        BindingType.MQTT_ENDPOINT,
+        "bravo.example.com",
+        8883);
+
+    mockMvc.perform(get("/api/certificates/{certificateId}/bindings", certificateId)
+        .param("page", "0")
+        .param("size", "2")
+        .param("sort", "endpoint,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size").value(2))
+        .andExpect(jsonPath("$.number").value(0))
+        .andExpect(jsonPath("$.numberOfElements").value(2))
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.content[0].endpoint").value("alpha.example.com"))
+        .andExpect(jsonPath("$.content[1].endpoint").value("bravo.example.com"));
+  }
+
+  @Test
+  void listByCertificateId_returnsRemainingBindingsOnSecondPage() throws Exception {
+    UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper, "Broker TLS Certificate");
+    UUID assetAId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset A");
+    UUID assetBId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset B");
+    UUID assetCId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset C");
+
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        assetAId,
+        BindingType.MQTT_ENDPOINT,
+        "alpha.example.com",
+        8883);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        assetBId,
+        BindingType.MQTT_ENDPOINT,
+        "bravo.example.com",
+        8883);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        assetCId,
+        BindingType.MQTT_ENDPOINT,
+        "charlie.example.com",
+        8883);
+
+    mockMvc.perform(get("/api/certificates/{certificateId}/bindings", certificateId)
+        .param("page", "1")
+        .param("size", "2")
+        .param("sort", "endpoint,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size").value(2))
+        .andExpect(jsonPath("$.number").value(1))
+        .andExpect(jsonPath("$.totalElements").value(3))
+        .andExpect(jsonPath("$.totalPages").value(2))
+        .andExpect(jsonPath("$.numberOfElements").value(1))
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].endpoint").value("charlie.example.com"));
+  }
+
+  @Test
+  void listByCertificateId_sortsBindingsByEndpointAscendingWhenRequested() throws Exception {
+    UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper, "Broker TLS Certificate");
+    UUID assetZuluId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset Zulu");
+    UUID assetAlphaId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset Alpha");
+    UUID assetMiddleId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset Middle");
+
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        assetZuluId,
+        BindingType.MQTT_ENDPOINT,
+        "zulu.example.com",
+        8883);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        assetAlphaId,
+        BindingType.MQTT_ENDPOINT,
+        "alpha.example.com",
+        8883);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateId,
+        assetMiddleId,
+        BindingType.MQTT_ENDPOINT,
+        "middle.example.com",
+        8883);
+
+    mockMvc.perform(get("/api/certificates/{certificateId}/bindings", certificateId)
+        .param("sort", "endpoint,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(3))
+        .andExpect(jsonPath("$.content[0].endpoint").value("alpha.example.com"))
+        .andExpect(jsonPath("$.content[1].endpoint").value("middle.example.com"))
+        .andExpect(jsonPath("$.content[2].endpoint").value("zulu.example.com"));
   }
 
   @Test

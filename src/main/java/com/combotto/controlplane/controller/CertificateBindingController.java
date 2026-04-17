@@ -4,6 +4,10 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,7 +48,9 @@ public class CertificateBindingController {
   }
 
   @GetMapping
-  public List<CertificateBindingResponse> listByCertificateId(@PathVariable UUID certificateId) {
-    return certificateBindingService.listByCertificateId(certificateId);
+  public Page<CertificateBindingResponse> listByCertificateId(
+      @PathVariable UUID certificateId,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    return certificateBindingService.listByCertificateId(certificateId, pageable);
   }
 }

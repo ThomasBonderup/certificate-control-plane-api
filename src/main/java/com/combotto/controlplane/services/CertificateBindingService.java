@@ -5,6 +5,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,25 +64,21 @@ public class CertificateBindingService {
   }
 
   @Transactional(readOnly = true)
-  public List<CertificateBindingResponse> listByCertificateId(UUID certificateId) {
+  public Page<CertificateBindingResponse> listByCertificateId(UUID certificateId, Pageable pageable) {
     if (!certificateRepository.existsById(certificateId)) {
       throw new ResourceNotFoundException("Certificate not found: " + certificateId);
     }
-    return certificateBindingRepository.findByCertificateId(certificateId)
-        .stream()
-        .map(this::toResponse)
-        .toList();
+    return certificateBindingRepository.findByCertificateId(certificateId, pageable)
+        .map(this::toResponse);
   }
 
   @Transactional(readOnly = true)
-  public List<CertificateBindingResponse> listByAssetId(UUID assetId) {
+  public Page<CertificateBindingResponse> listByAssetId(UUID assetId, Pageable pageable) {
     if (!assetRepository.existsById(assetId)) {
       throw new ResourceNotFoundException("Asset not found: " + assetId);
     }
-    return certificateBindingRepository.findByAssetId(assetId)
-        .stream()
-        .map(this::toResponse)
-        .toList();
+    return certificateBindingRepository.findByAssetId(assetId, pageable)
+        .map(this::toResponse);
   }
 
   @Transactional(readOnly = true)

@@ -3,6 +3,11 @@ package com.combotto.controlplane.controller;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 
 import org.springframework.http.ResponseEntity;
@@ -53,26 +58,29 @@ public class CertificateController {
   }
 
   @GetMapping
-  public List<CertificateResponse> list(
+  public Page<CertificateResponse> list(
       @RequestParam(required = false) String tenantId,
       @RequestParam(required = false) CertificateStatus status,
-      @RequestParam(required = false) RenewalStatus renewalStatus) {
-    return certificateService.list(tenantId, status, renewalStatus);
+      @RequestParam(required = false) RenewalStatus renewalStatus,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    return certificateService.list(tenantId, status, renewalStatus, pageable);
   }
 
   @GetMapping("/expiring-soon")
-  public List<CertificateResponse> listExpiringSoon(
+  public Page<CertificateResponse> listExpiringSoon(
       @RequestParam(defaultValue = "30") int days,
       @RequestParam(required = false) String tenantId,
       @RequestParam(required = false) String owner,
-      @RequestParam(required = false) RenewalStatus renewalStatus) {
-    return certificateService.listExpiringSoon(days, tenantId, owner, renewalStatus);
+      @RequestParam(required = false) RenewalStatus renewalStatus,
+      @PageableDefault(size = 20, sort = "notAfter", direction = Sort.Direction.ASC) Pageable pageable) {
+    return certificateService.listExpiringSoon(days, tenantId, owner, renewalStatus, pageable);
   }
 
   @GetMapping("/attention-needed")
-  public List<CertificateResponse> listAttentionNeeded(
-      @RequestParam(defaultValue = "30") int days) {
-    return certificateService.listAttentionNeeded(days);
+  public Page<CertificateResponse> listAttentionNeeded(
+      @RequestParam(defaultValue = "30") int days,
+      @PageableDefault(size = 20, sort = "notAfter", direction = Sort.Direction.ASC) Pageable pageable) {
+    return certificateService.listAttentionNeeded(days, pageable);
   }
 
   @GetMapping("/{id}")

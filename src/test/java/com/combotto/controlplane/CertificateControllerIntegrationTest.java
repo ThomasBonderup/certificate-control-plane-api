@@ -152,15 +152,15 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
+        .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "demo-tenant",
             "Gateway Client Certificate",
             "gateway.example.com",
             "Combotto CA",
             "987654321",
             "12:34:56:78:90",
-            OffsetDateTime.parse("2026-05-01T00:00:00Z"),
-            OffsetDateTime.parse("2026-08-01T00:00:00Z"),
+            30,
+            90,
             CertificateStatus.EXPIRING_SOON,
             RenewalStatus.PLANNED,
             "platform-team",
@@ -169,12 +169,16 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(get("/api/certificates"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(2))
-        .andExpect(jsonPath("$[*].name",
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.totalPages").value(1))
+        .andExpect(jsonPath("$.size").value(20))
+        .andExpect(jsonPath("$.number").value(0))
+        .andExpect(jsonPath("$.content[*].name",
             org.hamcrest.Matchers.containsInAnyOrder(
                 "Broker TLS Certificate",
                 "Gateway Client Certificate")))
-        .andExpect(jsonPath("$[*].status",
+        .andExpect(jsonPath("$.content[*].status",
             org.hamcrest.Matchers.containsInAnyOrder(
                 "ACTIVE",
                 "EXPIRING_SOON")));
@@ -189,15 +193,15 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
+        .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "test-tenant",
             "Gateway Client Certificate",
             "gateway.example.com",
             "Combotto CA",
             "987654321",
             "12:34:56:78:90",
-            OffsetDateTime.parse("2026-05-01T00:00:00Z"),
-            OffsetDateTime.parse("2026-08-01T00:00:00Z"),
+            30,
+            90,
             CertificateStatus.EXPIRING_SOON,
             RenewalStatus.PLANNED,
             "platform-team",
@@ -207,11 +211,12 @@ class CertificateControllerIntegrationTest {
     mockMvc.perform(get("/api/certificates")
         .param("tenantId", "demo-tenant"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(1))
-        .andExpect(jsonPath("$[0].tenantId").value("demo-tenant"))
-        .andExpect(jsonPath("$[0].name").value("Broker TLS Certificate"))
-        .andExpect(jsonPath("$[0].status").value("ACTIVE"))
-        .andExpect(jsonPath("$[0].renewalStatus").value("NOT_STATUS"));
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].tenantId").value("demo-tenant"))
+        .andExpect(jsonPath("$.content[0].name").value("Broker TLS Certificate"))
+        .andExpect(jsonPath("$.content[0].status").value("ACTIVE"))
+        .andExpect(jsonPath("$.content[0].renewalStatus").value("NOT_STATUS"));
   }
 
   @Test
@@ -223,15 +228,15 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
+        .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "test-tenant",
             "Gateway Client Certificate",
             "gateway.example.com",
             "Combotto CA",
             "987654321",
             "12:34:56:78:90",
-            OffsetDateTime.parse("2026-05-01T00:00:00Z"),
-            OffsetDateTime.parse("2026-08-01T00:00:00Z"),
+            30,
+            90,
             CertificateStatus.EXPIRING_SOON,
             RenewalStatus.PLANNED,
             "platform-team",
@@ -241,11 +246,12 @@ class CertificateControllerIntegrationTest {
     mockMvc.perform(get("/api/certificates")
         .param("status", "ACTIVE"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(1))
-        .andExpect(jsonPath("$[0].tenantId").value("demo-tenant"))
-        .andExpect(jsonPath("$[0].name").value("Broker TLS Certificate"))
-        .andExpect(jsonPath("$[0].status").value("ACTIVE"))
-        .andExpect(jsonPath("$[0].renewalStatus").value("NOT_STATUS"));
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].tenantId").value("demo-tenant"))
+        .andExpect(jsonPath("$.content[0].name").value("Broker TLS Certificate"))
+        .andExpect(jsonPath("$.content[0].status").value("ACTIVE"))
+        .andExpect(jsonPath("$.content[0].renewalStatus").value("NOT_STATUS"));
   }
 
   @Test
@@ -257,15 +263,15 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
+        .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "test-tenant",
             "Gateway Client Certificate",
             "gateway.example.com",
             "Combotto CA",
             "987654321",
             "12:34:56:78:90",
-            OffsetDateTime.parse("2026-05-01T00:00:00Z"),
-            OffsetDateTime.parse("2026-08-01T00:00:00Z"),
+            30,
+            90,
             CertificateStatus.EXPIRING_SOON,
             RenewalStatus.IN_PROGRESS,
             "platform-team",
@@ -275,26 +281,27 @@ class CertificateControllerIntegrationTest {
     mockMvc.perform(get("/api/certificates")
         .param("renewalStatus", "IN_PROGRESS"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(1))
-        .andExpect(jsonPath("$[0].tenantId").value("test-tenant"))
-        .andExpect(jsonPath("$[0].name").value("Gateway Client Certificate"))
-        .andExpect(jsonPath("$[0].status").value("EXPIRING_SOON"))
-        .andExpect(jsonPath("$[0].renewalStatus").value("IN_PROGRESS"));
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].tenantId").value("test-tenant"))
+        .andExpect(jsonPath("$.content[0].name").value("Gateway Client Certificate"))
+        .andExpect(jsonPath("$.content[0].status").value("EXPIRING_SOON"))
+        .andExpect(jsonPath("$.content[0].renewalStatus").value("IN_PROGRESS"));
   }
 
   @Test
   void list_returns200_whenMultipleFiltersAreCombined() throws Exception {
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
+        .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "demo-tenant",
             "Matching Certificate",
             "match.example.com",
             "Combotto CA",
             "111111111",
             "AA:AA:AA:AA",
-            OffsetDateTime.parse("2026-05-01T00:00:00Z"),
-            OffsetDateTime.parse("2026-08-01T00:00:00Z"),
+            30,
+            90,
             CertificateStatus.ACTIVE,
             RenewalStatus.IN_PROGRESS,
             "platform-team",
@@ -303,15 +310,15 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
+        .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "demo-tenant",
             "Wrong Renewal",
             "renewal.example.com",
             "Combotto CA",
             "222222222",
             "BB:BB:BB:BB",
-            OffsetDateTime.parse("2026-05-01T00:00:00Z"),
-            OffsetDateTime.parse("2026-08-01T00:00:00Z"),
+            30,
+            90,
             CertificateStatus.ACTIVE,
             RenewalStatus.PLANNED,
             "platform-team",
@@ -320,15 +327,15 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
+        .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "other-tenant",
             "Wrong Tenant",
             "tenant.example.com",
             "Combotto CA",
             "333333333",
             "CC:CC:CC:CC",
-            OffsetDateTime.parse("2026-05-01T00:00:00Z"),
-            OffsetDateTime.parse("2026-08-01T00:00:00Z"),
+            30,
+            90,
             CertificateStatus.ACTIVE,
             RenewalStatus.IN_PROGRESS,
             "platform-team",
@@ -340,11 +347,12 @@ class CertificateControllerIntegrationTest {
         .param("status", "ACTIVE")
         .param("renewalStatus", "IN_PROGRESS"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(1))
-        .andExpect(jsonPath("$[0].tenantId").value("demo-tenant"))
-        .andExpect(jsonPath("$[0].name").value("Matching Certificate"))
-        .andExpect(jsonPath("$[0].status").value("ACTIVE"))
-        .andExpect(jsonPath("$[0].renewalStatus").value("IN_PROGRESS"));
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.totalElements").value(1))
+        .andExpect(jsonPath("$.content[0].tenantId").value("demo-tenant"))
+        .andExpect(jsonPath("$.content[0].name").value("Matching Certificate"))
+        .andExpect(jsonPath("$.content[0].status").value("ACTIVE"))
+        .andExpect(jsonPath("$.content[0].renewalStatus").value("IN_PROGRESS"));
   }
 
   @Test
@@ -356,15 +364,15 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(post("/api/certificates")
         .contentType(MediaType.APPLICATION_JSON)
-        .content(objectMapper.writeValueAsString(CertificateFixtures.validCreateRequest(
+        .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "other-tenant",
             "Gateway Client Certificate",
             "gateway.example.com",
             "Combotto CA",
             "987654321",
             "12:34:56:78:90",
-            OffsetDateTime.parse("2026-05-01T00:00:00Z"),
-            OffsetDateTime.parse("2026-08-01T00:00:00Z"),
+            30,
+            90,
             CertificateStatus.EXPIRING_SOON,
             RenewalStatus.PLANNED,
             "platform-team",
@@ -374,11 +382,256 @@ class CertificateControllerIntegrationTest {
     mockMvc.perform(get("/api/certificates")
         .param("tenantId", ""))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(2))
-        .andExpect(jsonPath("$[*].tenantId",
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.content[*].tenantId",
             org.hamcrest.Matchers.containsInAnyOrder(
                 "demo-tenant",
                 "other-tenant")));
+  }
+
+  @Test
+  void list_respectsRequestedPageSize() throws Exception {
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Certificate C",
+        "cert-c.example.com",
+        "Combotto CA",
+        "serial-c",
+        "fingerprint-c",
+        30,
+        33,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "third certificate"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Certificate A",
+        "cert-a.example.com",
+        "Combotto CA",
+        "serial-a",
+        "fingerprint-a",
+        30,
+        31,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "first certificate"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Certificate B",
+        "cert-b.example.com",
+        "Combotto CA",
+        "serial-b",
+        "fingerprint-b",
+        30,
+        32,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "second certificate"));
+
+    mockMvc.perform(get("/api/certificates")
+        .param("page", "0")
+        .param("size", "2")
+        .param("sort", "notAfter,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size").value(2))
+        .andExpect(jsonPath("$.number").value(0))
+        .andExpect(jsonPath("$.numberOfElements").value(2))
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.content[0].name").value("Certificate A"))
+        .andExpect(jsonPath("$.content[1].name").value("Certificate B"));
+  }
+
+  @Test
+  void list_returnsRemainingItemsOnSecondPage() throws Exception {
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Certificate A",
+        "cert-a.example.com",
+        "Combotto CA",
+        "serial-a",
+        "fingerprint-a",
+        30,
+        31,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "first certificate"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Certificate B",
+        "cert-b.example.com",
+        "Combotto CA",
+        "serial-b",
+        "fingerprint-b",
+        30,
+        32,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "second certificate"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Certificate C",
+        "cert-c.example.com",
+        "Combotto CA",
+        "serial-c",
+        "fingerprint-c",
+        30,
+        33,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "third certificate"));
+
+    mockMvc.perform(get("/api/certificates")
+        .param("page", "1")
+        .param("size", "2")
+        .param("sort", "notAfter,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size").value(2))
+        .andExpect(jsonPath("$.number").value(1))
+        .andExpect(jsonPath("$.totalElements").value(3))
+        .andExpect(jsonPath("$.totalPages").value(2))
+        .andExpect(jsonPath("$.numberOfElements").value(1))
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].name").value("Certificate C"));
+  }
+
+  @Test
+  void list_sortsByNotAfterAscendingWhenRequested() throws Exception {
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Late Certificate",
+        "late.example.com",
+        "Combotto CA",
+        "serial-late",
+        "fingerprint-late",
+        30,
+        45,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "expires last"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Early Certificate",
+        "early.example.com",
+        "Combotto CA",
+        "serial-early",
+        "fingerprint-early",
+        30,
+        31,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "expires first"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Middle Certificate",
+        "middle.example.com",
+        "Combotto CA",
+        "serial-middle",
+        "fingerprint-middle",
+        30,
+        40,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "expires second"));
+
+    mockMvc.perform(get("/api/certificates")
+        .param("sort", "notAfter,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(3))
+        .andExpect(jsonPath("$.content[0].name").value("Early Certificate"))
+        .andExpect(jsonPath("$.content[1].name").value("Middle Certificate"))
+        .andExpect(jsonPath("$.content[2].name").value("Late Certificate"));
+  }
+
+  @Test
+  void list_combinesStatusFilterWithPaginationMetadata() throws Exception {
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Active Certificate A",
+        "active-a.example.com",
+        "Combotto CA",
+        "serial-active-a",
+        "fingerprint-active-a",
+        30,
+        31,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "active first"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Expiring Certificate",
+        "expiring.example.com",
+        "Combotto CA",
+        "serial-expiring",
+        "fingerprint-expiring",
+        30,
+        32,
+        CertificateStatus.EXPIRING_SOON,
+        RenewalStatus.PLANNED,
+        "thomas",
+        "not active"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Active Certificate B",
+        "active-b.example.com",
+        "Combotto CA",
+        "serial-active-b",
+        "fingerprint-active-b",
+        30,
+        33,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.IN_PROGRESS,
+        "thomas",
+        "active second"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Active Certificate C",
+        "active-c.example.com",
+        "Combotto CA",
+        "serial-active-c",
+        "fingerprint-active-c",
+        30,
+        34,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.PLANNED,
+        "thomas",
+        "active third"));
+
+    mockMvc.perform(get("/api/certificates")
+        .param("status", "ACTIVE")
+        .param("page", "0")
+        .param("size", "2")
+        .param("sort", "notAfter,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.content[*].status",
+            org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("ACTIVE"))))
+        .andExpect(jsonPath("$.number").value(0))
+        .andExpect(jsonPath("$.size").value(2))
+        .andExpect(jsonPath("$.totalElements").value(3))
+        .andExpect(jsonPath("$.totalPages").value(2))
+        .andExpect(jsonPath("$.numberOfElements").value(2))
+        .andExpect(jsonPath("$.content[0].name").value("Active Certificate A"))
+        .andExpect(jsonPath("$.content[1].name").value("Active Certificate B"));
   }
 
   @Test
@@ -460,9 +713,13 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(get("/api/certificates/expiring-soon"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(2))
-        .andExpect(jsonPath("$[0].name").value("First Expiring Certificate"))
-        .andExpect(jsonPath("$[1].name").value("Second Expiring Certificate"));
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.totalPages").value(1))
+        .andExpect(jsonPath("$.size").value(20))
+        .andExpect(jsonPath("$.number").value(0))
+        .andExpect(jsonPath("$.content[0].name").value("First Expiring Certificate"))
+        .andExpect(jsonPath("$.content[1].name").value("Second Expiring Certificate"));
   }
 
   @Test
@@ -566,15 +823,84 @@ class CertificateControllerIntegrationTest {
         .param("owner", "platform-team")
         .param("renewalStatus", "IN_PROGRESS"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(2))
-        .andExpect(jsonPath("$[0].name").value("First Matching Certificate"))
-        .andExpect(jsonPath("$[1].name").value("Second Matching Certificate"))
-        .andExpect(jsonPath("$[*].tenantId",
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.content[0].name").value("First Matching Certificate"))
+        .andExpect(jsonPath("$.content[1].name").value("Second Matching Certificate"))
+        .andExpect(jsonPath("$.content[*].tenantId",
             org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("demo-tenant"))))
-        .andExpect(jsonPath("$[*].owner",
+        .andExpect(jsonPath("$.content[*].owner",
             org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("platform-team"))))
-        .andExpect(jsonPath("$[*].renewalStatus",
+        .andExpect(jsonPath("$.content[*].renewalStatus",
             org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("IN_PROGRESS"))));
+  }
+
+  @Test
+  void listExpiringSoon_supportsPaginationAndSorting() throws Exception {
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Zulu Expiring",
+        "zulu-expiring.example.com",
+        "Combotto CA",
+        "serial-zulu-expiring",
+        "fingerprint-zulu-expiring",
+        20,
+        12,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "zulu expiring"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Alpha Expiring",
+        "alpha-expiring.example.com",
+        "Combotto CA",
+        "serial-alpha-expiring",
+        "fingerprint-alpha-expiring",
+        20,
+        10,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "alpha expiring"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Middle Expiring",
+        "middle-expiring.example.com",
+        "Combotto CA",
+        "serial-middle-expiring",
+        "fingerprint-middle-expiring",
+        20,
+        11,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "middle expiring"));
+
+    mockMvc.perform(get("/api/certificates/expiring-soon")
+        .param("page", "0")
+        .param("size", "2")
+        .param("sort", "name,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size").value(2))
+        .andExpect(jsonPath("$.number").value(0))
+        .andExpect(jsonPath("$.totalElements").value(3))
+        .andExpect(jsonPath("$.totalPages").value(2))
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.content[0].name").value("Alpha Expiring"))
+        .andExpect(jsonPath("$.content[1].name").value("Middle Expiring"));
+
+    mockMvc.perform(get("/api/certificates/expiring-soon")
+        .param("page", "1")
+        .param("size", "2")
+        .param("sort", "name,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.number").value(1))
+        .andExpect(jsonPath("$.numberOfElements").value(1))
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].name").value("Zulu Expiring"));
   }
 
   @Test
@@ -719,13 +1045,85 @@ class CertificateControllerIntegrationTest {
 
     mockMvc.perform(get("/api/certificates/attention-needed"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(6))
-        .andExpect(jsonPath("$[0].name").value("Expired Certificate"))
-        .andExpect(jsonPath("$[1].name").value("Expiring Soon Not Started Certificate"))
-        .andExpect(jsonPath("$[2].name").value("Expiring Soon Planned Certificate"))
-        .andExpect(jsonPath("$[3].name").value("Expiring Soon No Owner Certificate"))
-        .andExpect(jsonPath("$[4].name").value("Expiring Soon In Progress Certificate"))
-        .andExpect(jsonPath("$[5].name").value("Blocked Outside Window Certificate"));
+        .andExpect(jsonPath("$.content.length()").value(6))
+        .andExpect(jsonPath("$.totalElements").value(6))
+        .andExpect(jsonPath("$.totalPages").value(1))
+        .andExpect(jsonPath("$.size").value(20))
+        .andExpect(jsonPath("$.number").value(0))
+        .andExpect(jsonPath("$.content[0].name").value("Expired Certificate"))
+        .andExpect(jsonPath("$.content[1].name").value("Expiring Soon Not Started Certificate"))
+        .andExpect(jsonPath("$.content[2].name").value("Expiring Soon Planned Certificate"))
+        .andExpect(jsonPath("$.content[3].name").value("Expiring Soon No Owner Certificate"))
+        .andExpect(jsonPath("$.content[4].name").value("Expiring Soon In Progress Certificate"))
+        .andExpect(jsonPath("$.content[5].name").value("Blocked Outside Window Certificate"));
+  }
+
+  @Test
+  void listAttentionNeeded_supportsPaginationAndSorting() throws Exception {
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Zulu Attention",
+        "zulu-attention.example.com",
+        "Combotto CA",
+        "serial-zulu-attention",
+        "fingerprint-zulu-attention",
+        20,
+        5,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "zulu attention"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Alpha Attention",
+        "alpha-attention.example.com",
+        "Combotto CA",
+        "serial-alpha-attention",
+        "fingerprint-alpha-attention",
+        20,
+        7,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.PLANNED,
+        "thomas",
+        "alpha attention"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Middle Attention",
+        "middle-attention.example.com",
+        "Combotto CA",
+        "serial-middle-attention",
+        "fingerprint-middle-attention",
+        20,
+        6,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.IN_PROGRESS,
+        "thomas",
+        "middle attention"));
+
+    mockMvc.perform(get("/api/certificates/attention-needed")
+        .param("page", "0")
+        .param("size", "2")
+        .param("sort", "name,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size").value(2))
+        .andExpect(jsonPath("$.number").value(0))
+        .andExpect(jsonPath("$.totalElements").value(3))
+        .andExpect(jsonPath("$.totalPages").value(2))
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.content[0].name").value("Alpha Attention"))
+        .andExpect(jsonPath("$.content[1].name").value("Middle Attention"));
+
+    mockMvc.perform(get("/api/certificates/attention-needed")
+        .param("page", "1")
+        .param("size", "2")
+        .param("sort", "name,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.number").value(1))
+        .andExpect(jsonPath("$.numberOfElements").value(1))
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].name").value("Zulu Attention"));
   }
 
   @Test
@@ -826,5 +1224,35 @@ class CertificateControllerIntegrationTest {
         .andExpect(jsonPath("$.expiredSoon").value(1))
         .andExpect(jsonPath("$.expired").value(0))
         .andExpect(jsonPath("$.renewalProgress").value(1));
+  }
+
+  private CreateCertificateRequest relativeCertificateRequest(
+      String tenantId,
+      String name,
+      String commonName,
+      String issuer,
+      String serialNumber,
+      String sha256Fingerprint,
+      long notBeforeDaysAgo,
+      long notAfterDaysFromNow,
+      CertificateStatus status,
+      RenewalStatus renewalStatus,
+      String owner,
+      String notes) {
+    OffsetDateTime now = OffsetDateTime.now();
+
+    return CertificateFixtures.validCreateRequest(
+        tenantId,
+        name,
+        commonName,
+        issuer,
+        serialNumber,
+        sha256Fingerprint,
+        now.minusDays(notBeforeDaysAgo),
+        now.plusDays(notAfterDaysFromNow),
+        status,
+        renewalStatus,
+        owner,
+        notes);
   }
 }

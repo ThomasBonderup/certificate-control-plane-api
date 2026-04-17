@@ -102,15 +102,73 @@ class AssetControllerIntegrationTest {
 
     mockMvc.perform(get("/api/assets"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(2))
-        .andExpect(jsonPath("$[*].name",
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.totalPages").value(1))
+        .andExpect(jsonPath("$.size").value(20))
+        .andExpect(jsonPath("$.number").value(0))
+        .andExpect(jsonPath("$.content[*].name",
             org.hamcrest.Matchers.containsInAnyOrder(
                 "Primary Gateway Asset",
                 "Broker Asset")))
-        .andExpect(jsonPath("$[*].assetType",
+        .andExpect(jsonPath("$.content[*].assetType",
             org.hamcrest.Matchers.containsInAnyOrder(
                 "GATEWAY",
                 "GATEWAY")));
+  }
+
+  @Test
+  void list_respectsRequestedPageSize() throws Exception {
+    AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset C");
+    AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset A");
+    AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset B");
+
+    mockMvc.perform(get("/api/assets")
+        .param("page", "0")
+        .param("size", "2")
+        .param("sort", "name,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size").value(2))
+        .andExpect(jsonPath("$.number").value(0))
+        .andExpect(jsonPath("$.numberOfElements").value(2))
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.content[0].name").value("Asset A"))
+        .andExpect(jsonPath("$.content[1].name").value("Asset B"));
+  }
+
+  @Test
+  void list_returnsRemainingAssetsOnSecondPage() throws Exception {
+    AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset A");
+    AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset B");
+    AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset C");
+
+    mockMvc.perform(get("/api/assets")
+        .param("page", "1")
+        .param("size", "2")
+        .param("sort", "name,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size").value(2))
+        .andExpect(jsonPath("$.number").value(1))
+        .andExpect(jsonPath("$.totalElements").value(3))
+        .andExpect(jsonPath("$.totalPages").value(2))
+        .andExpect(jsonPath("$.numberOfElements").value(1))
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].name").value("Asset C"));
+  }
+
+  @Test
+  void list_sortsAssetsByNameAscendingWhenRequested() throws Exception {
+    AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Zulu Asset");
+    AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Alpha Asset");
+    AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Middle Asset");
+
+    mockMvc.perform(get("/api/assets")
+        .param("sort", "name,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(3))
+        .andExpect(jsonPath("$.content[0].name").value("Alpha Asset"))
+        .andExpect(jsonPath("$.content[1].name").value("Middle Asset"))
+        .andExpect(jsonPath("$.content[2].name").value("Zulu Asset"));
   }
 
   @Test
@@ -254,21 +312,78 @@ class AssetControllerIntegrationTest {
 
     mockMvc.perform(get("/api/assets/{assetId}/bindings", assetId))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.length()").value(2))
-        .andExpect(jsonPath("$[*].assetId",
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.content[*].assetId",
             org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is(assetId.toString()))))
-        .andExpect(jsonPath("$[*].certificateId",
+        .andExpect(jsonPath("$.content[*].certificateId",
             org.hamcrest.Matchers.containsInAnyOrder(
                 certificateId.toString(),
                 otherCertificateId.toString())))
-        .andExpect(jsonPath("$[*].certificateName",
+        .andExpect(jsonPath("$.content[*].certificateName",
             org.hamcrest.Matchers.containsInAnyOrder(
                 "Broker TLS Certificate",
                 "Gateway Client Certificate")))
-        .andExpect(jsonPath("$[*].bindingType",
+        .andExpect(jsonPath("$.content[*].bindingType",
             org.hamcrest.Matchers.containsInAnyOrder(
                 "MQTT_ENDPOINT",
                 "HTTPS_ENDPOINT")));
+  }
+
+  @Test
+  void listBindingsByAssetId_supportsPaginationAndSorting() throws Exception {
+    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
+    UUID certificateAId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper, "Certificate A");
+    UUID certificateBId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper, "Certificate B");
+    UUID certificateCId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper, "Certificate C");
+
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateCId,
+        assetId,
+        BindingType.MQTT_ENDPOINT,
+        "charlie.example.com",
+        8883);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateAId,
+        assetId,
+        BindingType.MQTT_ENDPOINT,
+        "alpha.example.com",
+        8883);
+    CertificateBindingFixtures.create(
+        mockMvc,
+        objectMapper,
+        certificateBId,
+        assetId,
+        BindingType.MQTT_ENDPOINT,
+        "bravo.example.com",
+        8883);
+
+    mockMvc.perform(get("/api/assets/{assetId}/bindings", assetId)
+        .param("page", "0")
+        .param("size", "2")
+        .param("sort", "endpoint,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.size").value(2))
+        .andExpect(jsonPath("$.number").value(0))
+        .andExpect(jsonPath("$.totalElements").value(3))
+        .andExpect(jsonPath("$.totalPages").value(2))
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.content[0].endpoint").value("alpha.example.com"))
+        .andExpect(jsonPath("$.content[1].endpoint").value("bravo.example.com"));
+
+    mockMvc.perform(get("/api/assets/{assetId}/bindings", assetId)
+        .param("page", "1")
+        .param("size", "2")
+        .param("sort", "endpoint,asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.number").value(1))
+        .andExpect(jsonPath("$.numberOfElements").value(1))
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.content[0].endpoint").value("charlie.example.com"));
   }
 
   @Test

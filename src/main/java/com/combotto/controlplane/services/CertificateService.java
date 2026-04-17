@@ -11,6 +11,8 @@ import com.combotto.controlplane.model.CertificateStatus;
 import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -51,24 +53,24 @@ public class CertificateService {
     return certificateMapper.toResponse(certificateRepository.save(entity));
   }
 
-  public List<CertificateResponse> list(
+  public Page<CertificateResponse> list(
       String tenantId,
       CertificateStatus status,
-      RenewalStatus renewalStatus) {
+      RenewalStatus renewalStatus,
+      Pageable pageable) {
 
     String normalizedTenantId = normalize(tenantId);
 
-    return certificateRepository.findByFilters(normalizedTenantId, status, renewalStatus)
-        .stream()
-        .map(certificateMapper::toResponse)
-        .toList();
+    return certificateRepository.findByFilters(normalizedTenantId, status, renewalStatus, pageable)
+        .map(certificateMapper::toResponse);
   }
 
-  public List<CertificateResponse> listExpiringSoon(
+  public Page<CertificateResponse> listExpiringSoon(
       int days,
       String tenantId,
       String owner,
-      RenewalStatus renewalStatus) {
+      RenewalStatus renewalStatus,
+      Pageable pageable) {
     OffsetDateTime now = OffsetDateTime.now();
     OffsetDateTime threshold = now.plusDays(days);
     String normalizedTenantId = normalize(tenantId);
@@ -79,13 +81,12 @@ public class CertificateService {
         threshold,
         normalizedTenantId,
         normalizedOwner,
-        renewalStatus)
-        .stream()
-        .map(certificateMapper::toResponse)
-        .toList();
+        renewalStatus,
+        pageable)
+        .map(certificateMapper::toResponse);
   }
 
-  public List<CertificateResponse> listAttentionNeeded(int days) {
+  public Page<CertificateResponse> listAttentionNeeded(int days, Pageable pageable) {
     OffsetDateTime now = OffsetDateTime.now();
     OffsetDateTime threshold = now.plusDays(days);
 
@@ -95,10 +96,9 @@ public class CertificateService {
         RenewalStatus.NOT_STATUS,
         RenewalStatus.PLANNED,
         RenewalStatus.IN_PROGRESS,
-        RenewalStatus.BLOCKED)
-        .stream()
-        .map(certificateMapper::toResponse)
-        .toList();
+        RenewalStatus.BLOCKED,
+        pageable)
+        .map(certificateMapper::toResponse);
   }
 
   public CertificateResponse getById(UUID id) {

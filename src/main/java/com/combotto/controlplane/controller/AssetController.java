@@ -4,6 +4,10 @@ import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -54,8 +58,9 @@ public class AssetController {
   }
 
   @GetMapping
-  public List<AssetResponse> list() {
-    return assetService.list();
+  public Page<AssetResponse> list(
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    return assetService.list(pageable);
   }
 
   @GetMapping("/{id}")
@@ -77,8 +82,10 @@ public class AssetController {
   }
 
   @GetMapping("/{assetId}/bindings")
-  public List<CertificateBindingResponse> listBindingsByAssetId(@PathVariable UUID assetId) {
-    return certificateBindingService.listByAssetId(assetId);
+  public Page<CertificateBindingResponse> listBindingsByAssetId(
+      @PathVariable UUID assetId,
+      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+    return certificateBindingService.listByAssetId(assetId, pageable);
   }
 
   @GetMapping("/{assetId}/certificates")
