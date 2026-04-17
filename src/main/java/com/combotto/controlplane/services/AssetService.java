@@ -5,6 +5,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import com.combotto.controlplane.api.AssetResponse;
@@ -40,11 +42,9 @@ public class AssetService {
     return toResponse(assetRepository.save(entity));
   }
 
-  public List<AssetResponse> list() {
-    return assetRepository.findAll()
-        .stream()
-        .map(this::toResponse)
-        .toList();
+  public Page<AssetResponse> list(Pageable pageable) {
+    return assetRepository.findAll(pageable)
+        .map(this::toResponse);
   }
 
   public AssetResponse getById(UUID id) {
