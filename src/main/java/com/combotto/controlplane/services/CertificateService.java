@@ -5,6 +5,7 @@ import com.combotto.controlplane.api.CertificateSummaryResponse;
 import com.combotto.controlplane.api.CreateCertificateRequest;
 import com.combotto.controlplane.api.UpdateCertificateRequest;
 import com.combotto.controlplane.common.CertificateMapper;
+import com.combotto.controlplane.common.CurrentUserProvider;
 import com.combotto.controlplane.common.ResourceNotFoundException;
 import com.combotto.controlplane.model.CertificateEntity;
 import com.combotto.controlplane.model.CertificateStatus;
@@ -18,16 +19,20 @@ import org.springframework.stereotype.Service;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
-import java.util.List;
 
 @Service
 public class CertificateService {
   private final CertificateRepository certificateRepository;
   private final CertificateMapper certificateMapper;
+  private final CurrentUserProvider currentUserProvider;
 
-  public CertificateService(CertificateRepository certificateRepository, CertificateMapper certificateMapper) {
+  public CertificateService(
+      CertificateRepository certificateRepository,
+      CertificateMapper certificateMapper,
+      CurrentUserProvider currentUserProvider) {
     this.certificateRepository = certificateRepository;
     this.certificateMapper = certificateMapper;
+    this.currentUserProvider = currentUserProvider;
   }
 
   public CertificateResponse create(CreateCertificateRequest request) {
@@ -49,6 +54,10 @@ public class CertificateService {
     entity.setNotes(request.notes());
     entity.setCreatedAt(now);
     entity.setUpdatedAt(now);
+
+    String currentUser = currentUserProvider.getCurrentUserId();
+    entity.setCreatedBy(currentUser);
+    entity.setUpdatedBy(currentUser);
 
     return certificateMapper.toResponse(certificateRepository.save(entity));
   }
@@ -135,6 +144,9 @@ public class CertificateService {
       entity.setNotes(request.notes());
 
     entity.setUpdatedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS));
+
+    String currentUser = currentUserProvider.getCurrentUserId();
+    entity.setUpdatedBy(currentUser);
 
     return certificateMapper.toResponse(certificateRepository.save(entity));
   }

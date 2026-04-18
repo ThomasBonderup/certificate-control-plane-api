@@ -24,7 +24,9 @@ public class CertificateMapper {
         entity.getOwner(),
         entity.getNotes(),
         entity.getCreatedAt(),
-        entity.getUpdatedAt());
+        entity.getUpdatedAt(),
+        entity.getCreatedBy(),
+        entity.getUpdatedBy());
   };
 
 }

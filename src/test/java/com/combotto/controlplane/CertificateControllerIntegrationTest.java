@@ -65,8 +65,10 @@ class CertificateControllerIntegrationTest {
 
   @Test
   void create_returns201_location_body_and_persistsCertificate() throws Exception {
+    String currentUser = "certificate-creator";
+
     String responseBody = mockMvc.perform(post("/api/certificates")
-        .with(authenticated())
+        .with(authenticated(currentUser))
         .contentType(MediaType.APPLICATION_JSON)
         .content(CertificateFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated())
@@ -75,6 +77,8 @@ class CertificateControllerIntegrationTest {
         .andExpect(jsonPath("$.name").value("Broker TLS Certificate"))
         .andExpect(jsonPath("$.status").value("ACTIVE"))
         .andExpect(jsonPath("$.renewalStatus").value("NOT_STATUS"))
+        .andExpect(jsonPath("$.createdBy").value(currentUser))
+        .andExpect(jsonPath("$.updatedBy").value(currentUser))
         .andReturn()
         .getResponse()
         .getContentAsString();
@@ -87,6 +91,8 @@ class CertificateControllerIntegrationTest {
     assertThat(saved.orElseThrow().getTenantId()).isEqualTo("demo-tenant");
     assertThat(saved.orElseThrow().getName()).isEqualTo("Broker TLS Certificate");
     assertThat(saved.orElseThrow().getIssuer()).isEqualTo("Let's Encrypt");
+    assertThat(saved.orElseThrow().getCreatedBy()).isEqualTo(currentUser);
+    assertThat(saved.orElseThrow().getUpdatedBy()).isEqualTo(currentUser);
   }
 
   @Test
@@ -1164,7 +1170,14 @@ class CertificateControllerIntegrationTest {
 
   @Test
   void update_returns200_andUpdatedCertificate() throws Exception {
-    UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
+    String createdBy = "certificate-creator";
+    String updatedBy = "certificate-editor";
+
+    UUID id = CertificateFixtures.createAndReturnId(
+        mockMvc,
+        objectMapper,
+        CertificateFixtures.validCreateRequest(),
+        createdBy);
 
     String updateRequest = """
         {
@@ -1177,7 +1190,7 @@ class CertificateControllerIntegrationTest {
         """;
 
     mockMvc.perform(patch("/api/certificates/{id}", id)
-        .with(authenticated())
+        .with(authenticated(updatedBy))
         .contentType(MediaType.APPLICATION_JSON)
         .content(updateRequest))
         .andExpect(status().isOk())
@@ -1186,12 +1199,16 @@ class CertificateControllerIntegrationTest {
         .andExpect(jsonPath("$.status").value("EXPIRING_SOON"))
         .andExpect(jsonPath("$.renewalStatus").value("PLANNED"))
         .andExpect(jsonPath("$.owner").value("platform-team"))
-        .andExpect(jsonPath("$.notes").value("updated certificate"));
+        .andExpect(jsonPath("$.notes").value("updated certificate"))
+        .andExpect(jsonPath("$.createdBy").value(createdBy))
+        .andExpect(jsonPath("$.updatedBy").value(updatedBy));
 
     var saved = certificateRepository.findById(id);
     assertThat(saved).isPresent();
     assertThat(saved.orElseThrow().getName()).isEqualTo("Updated Broker TLS Certificate");
     assertThat(saved.orElseThrow().getOwner()).isEqualTo("platform-team");
+    assertThat(saved.orElseThrow().getCreatedBy()).isEqualTo(createdBy);
+    assertThat(saved.orElseThrow().getUpdatedBy()).isEqualTo(updatedBy);
   }
 
   @Test
