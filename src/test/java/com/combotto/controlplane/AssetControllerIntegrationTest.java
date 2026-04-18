@@ -74,8 +74,10 @@ class AssetControllerIntegrationTest {
 
   @Test
   void create_returns201_location_body_and_persistsAsset() throws Exception {
+    String currentUser = "asset-creator";
+
     String responseBody = mockMvc.perform(post("/api/assets")
-        .with(authenticated())
+        .with(authenticated(currentUser))
         .contentType(MediaType.APPLICATION_JSON)
         .content(AssetFixtures.validCreateRequestJson(objectMapper)))
         .andExpect(status().isCreated())
@@ -83,6 +85,8 @@ class AssetControllerIntegrationTest {
         .andExpect(jsonPath("$.tenantId").value("demo-tenant"))
         .andExpect(jsonPath("$.name").value("Primary Gateway Asset"))
         .andExpect(jsonPath("$.assetType").value("GATEWAY"))
+        .andExpect(jsonPath("$.createdBy").value(currentUser))
+        .andExpect(jsonPath("$.updatedBy").value(currentUser))
         .andReturn()
         .getResponse()
         .getContentAsString();
@@ -95,6 +99,8 @@ class AssetControllerIntegrationTest {
     assertThat(saved.orElseThrow().getTenantId()).isEqualTo("demo-tenant");
     assertThat(saved.orElseThrow().getName()).isEqualTo("Primary Gateway Asset");
     assertThat(saved.orElseThrow().getHostname()).isEqualTo("gateway-01.example.com");
+    assertThat(saved.orElseThrow().getCreatedBy()).isEqualTo(currentUser);
+    assertThat(saved.orElseThrow().getUpdatedBy()).isEqualTo(currentUser);
   }
 
   @Test
@@ -208,10 +214,22 @@ class AssetControllerIntegrationTest {
 
   @Test
   void update_returns200_andUpdatesAsset() throws Exception {
-    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
+    String createdBy = "asset-creator";
+    String updatedBy = "asset-editor";
+
+    String createResponse = mockMvc.perform(post("/api/assets")
+        .with(authenticated(createdBy))
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(AssetFixtures.validCreateRequestJson(objectMapper)))
+        .andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    UUID assetId = UUID.fromString(objectMapper.readTree(createResponse).get("id").asText());
 
     mockMvc.perform(patch("/api/assets/{id}", assetId)
-        .with(authenticated())
+        .with(authenticated(updatedBy))
         .contentType(MediaType.APPLICATION_JSON)
         .content("""
             {
@@ -229,7 +247,9 @@ class AssetControllerIntegrationTest {
         .andExpect(jsonPath("$.assetType").value("GATEWAY"))
         .andExpect(jsonPath("$.environment").value("staging"))
         .andExpect(jsonPath("$.hostname").value("gateway-02.example.com"))
-        .andExpect(jsonPath("$.location").value("eu-central-1"));
+        .andExpect(jsonPath("$.location").value("eu-central-1"))
+        .andExpect(jsonPath("$.createdBy").value(createdBy))
+        .andExpect(jsonPath("$.updatedBy").value(updatedBy));
 
     var saved = assetRepository.findById(assetId);
     assertThat(saved).isPresent();
@@ -237,6 +257,8 @@ class AssetControllerIntegrationTest {
     assertThat(saved.orElseThrow().getEnvironment()).isEqualTo("staging");
     assertThat(saved.orElseThrow().getHostname()).isEqualTo("gateway-02.example.com");
     assertThat(saved.orElseThrow().getLocation()).isEqualTo("eu-central-1");
+    assertThat(saved.orElseThrow().getCreatedBy()).isEqualTo(createdBy);
+    assertThat(saved.orElseThrow().getUpdatedBy()).isEqualTo(updatedBy);
   }
 
   @Test

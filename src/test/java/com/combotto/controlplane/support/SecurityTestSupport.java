@@ -13,8 +13,12 @@ public final class SecurityTestSupport {
   }
 
   public static RequestPostProcessor authenticated() {
+    return authenticated("test-user");
+  }
+
+  public static RequestPostProcessor authenticated(String subject) {
     return jwt().jwt(token -> token
-        .claim("sub", "test-user")
+        .claim("sub", subject)
         .claim("scope", READ_SCOPE + " " + WRITE_SCOPE))
         .authorities(
             new SimpleGrantedAuthority("SCOPE_" + READ_SCOPE),

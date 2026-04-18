@@ -52,6 +52,12 @@ public class CertificateEntity {
   @Column(name = "updated_at", nullable = false)
   private OffsetDateTime updatedAt;
 
+  @Column(name = "created_by")
+  private String createdBy;
+
+  @Column(name = "updated_by")
+  private String updatedBy;
+
   public UUID getId() {
     return id;
   }
@@ -170,5 +176,21 @@ public class CertificateEntity {
 
   public void setUpdatedAt(OffsetDateTime updatedAt) {
     this.updatedAt = updatedAt;
+  }
+
+  public String getCreatedBy() {
+    return createdBy;
+  }
+
+  public void setCreatedBy(String createdBy) {
+    this.createdBy = createdBy;
+  }
+
+  public String getUpdatedBy() {
+    return updatedBy;
+  }
+
+  public void setUpdatedBy(String updatedBy) {
+    this.updatedBy = updatedBy;
   }
 }

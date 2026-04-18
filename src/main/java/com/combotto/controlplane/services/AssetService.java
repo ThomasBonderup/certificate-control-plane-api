@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import com.combotto.controlplane.api.AssetResponse;
 import com.combotto.controlplane.api.CreateAssetRequest;
 import com.combotto.controlplane.api.UpdateAssetRequest;
+import com.combotto.controlplane.common.CurrentUserProvider;
 import com.combotto.controlplane.common.ResourceNotFoundException;
 import com.combotto.controlplane.model.AssetEntity;
 import com.combotto.controlplane.repositories.AssetRepository;
@@ -20,9 +21,11 @@ import com.combotto.controlplane.repositories.AssetRepository;
 public class AssetService {
 
   private final AssetRepository assetRepository;
+  private final CurrentUserProvider currentUserProvider;
 
-  public AssetService(AssetRepository assetRepository) {
+  public AssetService(AssetRepository assetRepository, CurrentUserProvider currentUserProvider) {
     this.assetRepository = assetRepository;
+    this.currentUserProvider = currentUserProvider;
   }
 
   public AssetResponse create(CreateAssetRequest request) {
@@ -38,6 +41,10 @@ public class AssetService {
     entity.setLocation(request.location());
     entity.setCreatedAt(now);
     entity.setUpdatedAt(now);
+
+    String currentUser = currentUserProvider.getCurrentUserId();
+    entity.setCreatedBy(currentUser);
+    entity.setUpdatedBy(currentUser);
 
     return toResponse(assetRepository.save(entity));
   }
@@ -70,6 +77,9 @@ public class AssetService {
 
     entity.setUpdatedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS));
 
+    String currentUser = currentUserProvider.getCurrentUserId();
+    entity.setUpdatedBy(currentUser);
+
     return toResponse(assetRepository.save(entity));
   }
 
@@ -90,6 +100,8 @@ public class AssetService {
         entity.getHostname(),
         entity.getLocation(),
         entity.getCreatedAt(),
-        entity.getUpdatedAt());
+        entity.getUpdatedAt(),
+        entity.getCreatedBy(),
+        entity.getUpdatedBy());
   }
 }

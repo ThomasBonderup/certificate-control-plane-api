@@ -96,8 +96,16 @@ public final class CertificateFixtures {
       MockMvc mockMvc,
       ObjectMapper objectMapper,
       CreateCertificateRequest request) throws Exception {
+    create(mockMvc, objectMapper, request, "test-user");
+  }
+
+  public static void create(
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
+      CreateCertificateRequest request,
+      String subject) throws Exception {
     mockMvc.perform(post("/api/certificates")
-        .with(authenticated())
+        .with(authenticated(subject))
         .contentType(MediaType.APPLICATION_JSON)
         .content(validCreateRequestJson(objectMapper, request)))
         .andExpect(status().isCreated());
@@ -120,8 +128,16 @@ public final class CertificateFixtures {
       MockMvc mockMvc,
       ObjectMapper objectMapper,
       CreateCertificateRequest request) throws Exception {
+    return createAndReturnId(mockMvc, objectMapper, request, "test-user");
+  }
+
+  public static UUID createAndReturnId(
+      MockMvc mockMvc,
+      ObjectMapper objectMapper,
+      CreateCertificateRequest request,
+      String subject) throws Exception {
     String responseBody = mockMvc.perform(post("/api/certificates")
-        .with(authenticated())
+        .with(authenticated(subject))
         .contentType(MediaType.APPLICATION_JSON)
         .content(validCreateRequestJson(objectMapper, request)))
         .andExpect(status().isCreated())
