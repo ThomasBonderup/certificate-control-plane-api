@@ -21,6 +21,8 @@ public class CertificateMapper {
         entity.getNotAfter(),
         entity.getStatus().name(),
         entity.getRenewalStatus().name(),
+        entity.getBlockedReason(),
+        entity.getRenewalUpdatedAt(),
         entity.getOwner(),
         entity.getNotes(),
         entity.getCreatedAt(),

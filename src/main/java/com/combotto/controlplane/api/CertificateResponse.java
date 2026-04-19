@@ -15,6 +15,8 @@ public record CertificateResponse(
     OffsetDateTime notAfter,
     String status,
     String renewalStatus,
+    String blockedReason,
+    OffsetDateTime renewalUpdatedAt,
     String owner,
     String notes,
     OffsetDateTime createdAt,

@@ -15,6 +15,7 @@ public record UpdateCertificateRequest(
   OffsetDateTime notAfter,
   CertificateStatus status,
   RenewalStatus renewalStatus,
+  String blockedReason,
   String owner,
   String notes
 ) {}
