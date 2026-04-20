@@ -28,41 +28,68 @@
         "include.in.token.scope": "true"
       },
       "protocolMappers": []
+    },
+    {
+      "name": "tenant-context",
+      "description": "Adds tenant context to access tokens",
+      "protocol": "openid-connect",
+      "attributes": {
+        "display.on.consent.screen": "false",
+        "include.in.token.scope": "true"
+      },
+      "protocolMappers": [
+        {
+          "name": "tenantId",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-attribute-mapper",
+          "consentRequired": false,
+          "config": {
+            "user.attribute": "tenant_id",
+            "claim.name": "tenantId",
+            "jsonType.label": "String",
+            "access.token.claim": "true",
+            "id.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "clients": [
     {
-      "clientId": "${KEYCLOAK_READ_CLIENT_ID}",
+      "clientId": "${KEYCLOAK_DEMO_READ_CLIENT_ID}",
       "name": "Control Plane Read CLI",
       "description": "Local development client for read-only token generation",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "${KEYCLOAK_READ_CLIENT_SECRET}",
+      "secret": "${KEYCLOAK_DEMO_READ_CLIENT_SECRET}",
       "directAccessGrantsEnabled": true,
       "standardFlowEnabled": false,
       "serviceAccountsEnabled": false,
       "fullScopeAllowed": false,
       "defaultClientScopes": [
-        "controlplane.read"
+        "controlplane.read",
+        "tenant-context"
       ],
       "redirectUris": [],
       "webOrigins": []
     },
     {
-      "clientId": "${KEYCLOAK_WRITE_CLIENT_ID}",
+      "clientId": "${KEYCLOAK_DEMO_WRITE_CLIENT_ID}",
       "name": "Control Plane Write CLI",
       "description": "Local development client for write-only token generation",
       "enabled": true,
       "protocol": "openid-connect",
       "publicClient": false,
-      "secret": "${KEYCLOAK_WRITE_CLIENT_SECRET}",
+      "secret": "${KEYCLOAK_DEMO_WRITE_CLIENT_SECRET}",
       "directAccessGrantsEnabled": true,
       "standardFlowEnabled": false,
       "serviceAccountsEnabled": false,
       "fullScopeAllowed": false,
       "defaultClientScopes": [
-        "controlplane.write"
+        "controlplane.write",
+        "tenant-context"
       ],
       "redirectUris": [],
       "webOrigins": []
@@ -70,16 +97,21 @@
   ],
   "users": [
     {
-      "username": "${KEYCLOAK_READ_USERNAME}",
+      "username": "${KEYCLOAK_DEMO_READ_USERNAME}",
       "enabled": true,
       "emailVerified": true,
-      "firstName": "Local",
+      "firstName": "Demo",
       "lastName": "Reader",
-      "email": "${KEYCLOAK_READ_EMAIL}",
+      "email": "${KEYCLOAK_DEMO_READ_EMAIL}",
+      "attributes": {
+        "tenant_id": [
+          "${KEYCLOAK_DEMO_TENANT_ID}"
+        ]
+      },
       "credentials": [
         {
           "type": "password",
-          "value": "${KEYCLOAK_READ_PASSWORD}",
+          "value": "${KEYCLOAK_DEMO_READ_PASSWORD}",
           "temporary": false
         }
       ],
@@ -88,16 +120,67 @@
       ]
     },
     {
-      "username": "${KEYCLOAK_WRITE_USERNAME}",
+      "username": "${KEYCLOAK_DEMO_WRITE_USERNAME}",
       "enabled": true,
       "emailVerified": true,
-      "firstName": "Local",
+      "firstName": "Demo",
       "lastName": "Writer",
-      "email": "${KEYCLOAK_WRITE_EMAIL}",
+      "email": "${KEYCLOAK_DEMO_WRITE_EMAIL}",
+      "attributes": {
+        "tenant_id": [
+          "${KEYCLOAK_DEMO_TENANT_ID}"
+        ]
+      },
       "credentials": [
         {
           "type": "password",
-          "value": "${KEYCLOAK_WRITE_PASSWORD}",
+          "value": "${KEYCLOAK_DEMO_WRITE_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-combotto"
+      ]
+    },
+    {
+      "username": "${KEYCLOAK_OTHER_READ_USERNAME}",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Other",
+      "lastName": "Reader",
+      "email": "${KEYCLOAK_OTHER_READ_EMAIL}",
+      "attributes": {
+        "tenant_id": [
+          "${KEYCLOAK_OTHER_TENANT_ID}"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_OTHER_READ_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-combotto"
+      ]
+    },
+    {
+      "username": "${KEYCLOAK_OTHER_WRITE_USERNAME}",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Other",
+      "lastName": "Writer",
+      "email": "${KEYCLOAK_OTHER_WRITE_EMAIL}",
+      "attributes": {
+        "tenant_id": [
+          "${KEYCLOAK_OTHER_TENANT_ID}"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_OTHER_WRITE_PASSWORD}",
           "temporary": false
         }
       ],

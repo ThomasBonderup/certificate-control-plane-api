@@ -45,6 +45,10 @@
       "value": ""
     },
     {
+      "key": "accessTokenTenantId",
+      "value": ""
+    },
+    {
       "key": "certificateId",
       "value": ""
     },
@@ -55,7 +59,7 @@
   ],
   "item": [
     {
-      "name": "Get Read Token",
+      "name": "Get Demo Read Token",
       "request": {
         "auth": {
           "type": "noauth"
@@ -77,22 +81,22 @@
             },
             {
               "key": "client_id",
-              "value": "{{readClientId}}",
+              "value": "{{demoReadClientId}}",
               "type": "text"
             },
             {
               "key": "client_secret",
-              "value": "{{readClientSecret}}",
+              "value": "{{demoReadClientSecret}}",
               "type": "text"
             },
             {
               "key": "username",
-              "value": "{{readUsername}}",
+              "value": "{{demoReadUsername}}",
               "type": "text"
             },
             {
               "key": "password",
-              "value": "{{readPassword}}",
+              "value": "{{demoReadPassword}}",
               "type": "text"
             }
           ]
@@ -110,7 +114,7 @@
             "token"
           ]
         },
-        "description": "Gets a read-only Keycloak access token and stores it into the collection variables `accessToken`, `accessTokenScope`, and `accessTokenSubject`."
+        "description": "Gets a demo-tenant read-only Keycloak access token and stores `accessToken`, `accessTokenScope`, `accessTokenSubject`, and `accessTokenTenantId`."
       },
       "event": [
         {
@@ -139,9 +143,11 @@
               "  var payload = decodeJwtPayload(body.access_token);",
               "  pm.collectionVariables.set(\"accessTokenScope\", payload.scope || \"\");",
               "  pm.collectionVariables.set(\"accessTokenSubject\", payload.sub || \"\");",
+              "  pm.collectionVariables.set(\"accessTokenTenantId\", payload.tenantId || \"\");",
               "  pm.collectionVariables.set(\"activeTokenProfile\", \"read\");",
               "  console.log(\"JWT subject:\", payload.sub || \"<missing>\");",
               "  console.log(\"JWT scopes:\", payload.scope || \"<missing>\");",
+              "  console.log(\"JWT tenantId:\", payload.tenantId || \"<missing>\");",
               "}"
             ]
           }
@@ -149,7 +155,7 @@
       ]
     },
     {
-      "name": "Get Write Token",
+      "name": "Get Demo Write Token",
       "request": {
         "auth": {
           "type": "noauth"
@@ -171,22 +177,22 @@
             },
             {
               "key": "client_id",
-              "value": "{{writeClientId}}",
+              "value": "{{demoWriteClientId}}",
               "type": "text"
             },
             {
               "key": "client_secret",
-              "value": "{{writeClientSecret}}",
+              "value": "{{demoWriteClientSecret}}",
               "type": "text"
             },
             {
               "key": "username",
-              "value": "{{writeUsername}}",
+              "value": "{{demoWriteUsername}}",
               "type": "text"
             },
             {
               "key": "password",
-              "value": "{{writePassword}}",
+              "value": "{{demoWritePassword}}",
               "type": "text"
             }
           ]
@@ -204,7 +210,7 @@
             "token"
           ]
         },
-        "description": "Gets a write-only Keycloak access token and stores it into the collection variables `accessToken`, `accessTokenScope`, and `accessTokenSubject`."
+        "description": "Gets a demo-tenant write-only Keycloak access token and stores `accessToken`, `accessTokenScope`, `accessTokenSubject`, and `accessTokenTenantId`."
       },
       "event": [
         {
@@ -233,9 +239,203 @@
               "  var payload = decodeJwtPayload(body.access_token);",
               "  pm.collectionVariables.set(\"accessTokenScope\", payload.scope || \"\");",
               "  pm.collectionVariables.set(\"accessTokenSubject\", payload.sub || \"\");",
+              "  pm.collectionVariables.set(\"accessTokenTenantId\", payload.tenantId || \"\");",
               "  pm.collectionVariables.set(\"activeTokenProfile\", \"write\");",
               "  console.log(\"JWT subject:\", payload.sub || \"<missing>\");",
               "  console.log(\"JWT scopes:\", payload.scope || \"<missing>\");",
+              "  console.log(\"JWT tenantId:\", payload.tenantId || \"<missing>\");",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Other Read Token",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "password",
+              "type": "text"
+            },
+            {
+              "key": "client_id",
+              "value": "{{demoReadClientId}}",
+              "type": "text"
+            },
+            {
+              "key": "client_secret",
+              "value": "{{demoReadClientSecret}}",
+              "type": "text"
+            },
+            {
+              "key": "username",
+              "value": "{{otherReadUsername}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{otherReadPassword}}",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+          "host": [
+            "{{keycloakBaseUrl}}"
+          ],
+          "path": [
+            "realms",
+            "{{realm}}",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        },
+        "description": "Gets an other-tenant read-only Keycloak access token and stores `accessToken`, `accessTokenScope`, `accessTokenSubject`, and `accessTokenTenantId`."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function decodeJwtPayload(token) {",
+              "  var encodedPayload = token.split('.')[1];",
+              "  var base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');",
+              "  var padded = base64.padEnd(base64.length + ((4 - base64.length % 4) % 4), '=');",
+              "  return JSON.parse(atob(padded));",
+              "}",
+              "",
+              "pm.test(\"status is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "var body = pm.response.json();",
+              "pm.test(\"access token is present\", function () {",
+              "  pm.expect(body.access_token).to.be.a(\"string\").and.not.empty;",
+              "});",
+              "",
+              "if (body && body.access_token) {",
+              "  pm.collectionVariables.set(\"accessToken\", body.access_token);",
+              "  var payload = decodeJwtPayload(body.access_token);",
+              "  pm.collectionVariables.set(\"accessTokenScope\", payload.scope || \"\");",
+              "  pm.collectionVariables.set(\"accessTokenSubject\", payload.sub || \"\");",
+              "  pm.collectionVariables.set(\"accessTokenTenantId\", payload.tenantId || \"\");",
+              "  pm.collectionVariables.set(\"activeTokenProfile\", \"read\");",
+              "  console.log(\"JWT subject:\", payload.sub || \"<missing>\");",
+              "  console.log(\"JWT scopes:\", payload.scope || \"<missing>\");",
+              "  console.log(\"JWT tenantId:\", payload.tenantId || \"<missing>\");",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Get Other Write Token",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "grant_type",
+              "value": "password",
+              "type": "text"
+            },
+            {
+              "key": "client_id",
+              "value": "{{demoWriteClientId}}",
+              "type": "text"
+            },
+            {
+              "key": "client_secret",
+              "value": "{{demoWriteClientSecret}}",
+              "type": "text"
+            },
+            {
+              "key": "username",
+              "value": "{{otherWriteUsername}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{otherWritePassword}}",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{keycloakBaseUrl}}/realms/{{realm}}/protocol/openid-connect/token",
+          "host": [
+            "{{keycloakBaseUrl}}"
+          ],
+          "path": [
+            "realms",
+            "{{realm}}",
+            "protocol",
+            "openid-connect",
+            "token"
+          ]
+        },
+        "description": "Gets an other-tenant write-only Keycloak access token and stores `accessToken`, `accessTokenScope`, `accessTokenSubject`, and `accessTokenTenantId`."
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "function decodeJwtPayload(token) {",
+              "  var encodedPayload = token.split('.')[1];",
+              "  var base64 = encodedPayload.replace(/-/g, '+').replace(/_/g, '/');",
+              "  var padded = base64.padEnd(base64.length + ((4 - base64.length % 4) % 4), '=');",
+              "  return JSON.parse(atob(padded));",
+              "}",
+              "",
+              "pm.test(\"status is 200\", function () {",
+              "  pm.response.to.have.status(200);",
+              "});",
+              "",
+              "var body = pm.response.json();",
+              "pm.test(\"access token is present\", function () {",
+              "  pm.expect(body.access_token).to.be.a(\"string\").and.not.empty;",
+              "});",
+              "",
+              "if (body && body.access_token) {",
+              "  pm.collectionVariables.set(\"accessToken\", body.access_token);",
+              "  var payload = decodeJwtPayload(body.access_token);",
+              "  pm.collectionVariables.set(\"accessTokenScope\", payload.scope || \"\");",
+              "  pm.collectionVariables.set(\"accessTokenSubject\", payload.sub || \"\");",
+              "  pm.collectionVariables.set(\"accessTokenTenantId\", payload.tenantId || \"\");",
+              "  pm.collectionVariables.set(\"activeTokenProfile\", \"write\");",
+              "  console.log(\"JWT subject:\", payload.sub || \"<missing>\");",
+              "  console.log(\"JWT scopes:\", payload.scope || \"<missing>\");",
+              "  console.log(\"JWT tenantId:\", payload.tenantId || \"<missing>\");",
               "}"
             ]
           }
@@ -420,7 +620,7 @@
             "certificates"
           ]
         },
-        "description": "Creates a certificate and stores the returned id into the collection variable `certificateId`. This should succeed only when the JWT includes `controlplane.write`."
+        "description": "Creates a certificate and stores the returned id into `certificateId`. The request body tenantId must match the JWT `tenantId` claim, and the API persists the JWT tenant boundary."
       },
       "event": [
         {
@@ -465,7 +665,7 @@
             "assets"
           ]
         },
-        "description": "Creates an asset and stores the returned id into the collection variable `assetId`."
+        "description": "Creates an asset and stores the returned id into `assetId`. The request body tenantId must match the JWT `tenantId` claim."
       },
       "event": [
         {
@@ -589,7 +789,8 @@
               "});",
               "",
               "console.log(\"Access token scopes:\", pm.collectionVariables.get(\"accessTokenScope\") || \"<unknown>\");",
-              "console.log(\"Access token subject:\", pm.collectionVariables.get(\"accessTokenSubject\") || \"<unknown>\");"
+              "console.log(\"Access token subject:\", pm.collectionVariables.get(\"accessTokenSubject\") || \"<unknown>\");",
+              "console.log(\"Access token tenantId:\", pm.collectionVariables.get(\"accessTokenTenantId\") || \"<unknown>\");"
             ]
           }
         }
@@ -883,7 +1084,7 @@
             }
           ]
         },
-        "description": "Walkthrough: 1) run `Authorization Demo - List Certificates Without Token` to see 401, 2) run `Get Read Token` and inspect `accessTokenScope`, 3) run `List Certificates` for a 200 and `Authorization Demo - Read Token Cannot Create Certificate` for a 403, 4) run `Get Write Token`, 5) run `Create Certificate` for a 201 and `Authorization Demo - Write Token Cannot List Certificates` for a 403."
+        "description": "Walkthrough: 1) run `Authorization Demo - List Certificates Without Token` to see 401, 2) run `Get Demo Read Token` and inspect `accessTokenScope` plus `accessTokenTenantId`, 3) run `List Certificates` for a 200 and `Authorization Demo - Read Token Cannot Create Certificate` for a 403, 4) run `Get Demo Write Token`, 5) run `Create Certificate` for a 201 and `Authorization Demo - Write Token Cannot List Certificates` for a 403, 6) run `Get Other Read Token` or `Get Other Write Token` to switch the collection to `other-tenant`."
       },
       "event": [
         {

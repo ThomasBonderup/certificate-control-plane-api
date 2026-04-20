@@ -213,6 +213,19 @@ class AssetControllerIntegrationTest {
   }
 
   @Test
+  void getById_returns404_whenAssetBelongsToDifferentTenant() throws Exception {
+    UUID assetId = AssetFixtures.createAndReturnId(
+        mockMvc,
+        objectMapper,
+        AssetFixtures.validCreateRequest("other-tenant", "Other Tenant Asset"));
+
+    mockMvc.perform(get("/api/assets/{id}", assetId)
+        .with(authenticated()))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.message").value("Asset not found: " + assetId));
+  }
+
+  @Test
   void update_returns200_andUpdatesAsset() throws Exception {
     String createdBy = "asset-creator";
     String updatedBy = "asset-editor";

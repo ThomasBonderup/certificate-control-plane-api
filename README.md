@@ -65,70 +65,97 @@ Keycloak is configured for local development on `http://localhost:9000` with a r
 - Realm: `combotto`
 - Admin username: `${KEYCLOAK_ADMIN_USERNAME}`
 - Admin password: `${KEYCLOAK_ADMIN_PASSWORD}`
-- Read client id: `${KEYCLOAK_READ_CLIENT_ID}`
-- Read client secret: `${KEYCLOAK_READ_CLIENT_SECRET}`
-- Read test username: `${KEYCLOAK_READ_USERNAME}`
-- Read test password: `${KEYCLOAK_READ_PASSWORD}`
-- Write client id: `${KEYCLOAK_WRITE_CLIENT_ID}`
-- Write client secret: `${KEYCLOAK_WRITE_CLIENT_SECRET}`
-- Write test username: `${KEYCLOAK_WRITE_USERNAME}`
-- Write test password: `${KEYCLOAK_WRITE_PASSWORD}`
+- Demo read client id: `${KEYCLOAK_DEMO_READ_CLIENT_ID}`
+- Demo read client secret: `${KEYCLOAK_DEMO_READ_CLIENT_SECRET}`
+- Demo read username: `${KEYCLOAK_DEMO_READ_USERNAME}`
+- Demo read password: `${KEYCLOAK_DEMO_READ_PASSWORD}`
+- Demo write client id: `${KEYCLOAK_DEMO_WRITE_CLIENT_ID}`
+- Demo write client secret: `${KEYCLOAK_DEMO_WRITE_CLIENT_SECRET}`
+- Demo write username: `${KEYCLOAK_DEMO_WRITE_USERNAME}`
+- Demo write password: `${KEYCLOAK_DEMO_WRITE_PASSWORD}`
+- Demo tenant id: `${KEYCLOAK_DEMO_TENANT_ID}`
+- Other read username: `${KEYCLOAK_OTHER_READ_USERNAME}`
+- Other read password: `${KEYCLOAK_OTHER_READ_PASSWORD}`
+- Other write username: `${KEYCLOAK_OTHER_WRITE_USERNAME}`
+- Other write password: `${KEYCLOAK_OTHER_WRITE_PASSWORD}`
+- Other tenant id: `${KEYCLOAK_OTHER_TENANT_ID}`
 
 The realm file is now a template at [combotto-realm.template.json](/Users/thomaswintherbonderup/Development/combotto-control-plane-api/keycloak/import/combotto-realm.template.json). `docker compose` passes the Keycloak values into the container, a small startup script renders the final realm JSON, and then Keycloak imports that rendered file. This is necessary because Keycloak does not interpolate environment variables directly inside realm import JSON.
 
-Get a local read token:
+Each local Keycloak user has a `tenant_id` user attribute. Keycloak maps that attribute into the JWT as the `tenantId` claim, and the API uses that claim as the tenant boundary for certificates, assets, and bindings.
+
+Get a local demo-tenant read token:
 
 ```bash
 curl -s \
   -X POST http://localhost:9000/realms/combotto/protocol/openid-connect/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=password' \
-  -d "client_id=$KEYCLOAK_READ_CLIENT_ID" \
-  -d "client_secret=$KEYCLOAK_READ_CLIENT_SECRET" \
-  -d "username=$KEYCLOAK_READ_USERNAME" \
-  -d "password=$KEYCLOAK_READ_PASSWORD"
+  -d "client_id=$KEYCLOAK_DEMO_READ_CLIENT_ID" \
+  -d "client_secret=$KEYCLOAK_DEMO_READ_CLIENT_SECRET" \
+  -d "username=$KEYCLOAK_DEMO_READ_USERNAME" \
+  -d "password=$KEYCLOAK_DEMO_READ_PASSWORD"
 ```
 
-Get a local write token:
+Get a local demo-tenant write token:
 
 ```bash
 curl -s \
   -X POST http://localhost:9000/realms/combotto/protocol/openid-connect/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=password' \
-  -d "client_id=$KEYCLOAK_WRITE_CLIENT_ID" \
-  -d "client_secret=$KEYCLOAK_WRITE_CLIENT_SECRET" \
-  -d "username=$KEYCLOAK_WRITE_USERNAME" \
-  -d "password=$KEYCLOAK_WRITE_PASSWORD"
+  -d "client_id=$KEYCLOAK_DEMO_WRITE_CLIENT_ID" \
+  -d "client_secret=$KEYCLOAK_DEMO_WRITE_CLIENT_SECRET" \
+  -d "username=$KEYCLOAK_DEMO_WRITE_USERNAME" \
+  -d "password=$KEYCLOAK_DEMO_WRITE_PASSWORD"
 ```
 
-Use the read token against the API:
+Get a local other-tenant read token:
+
+```bash
+curl -s \
+  -X POST http://localhost:9000/realms/combotto/protocol/openid-connect/token \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'grant_type=password' \
+  -d "client_id=$KEYCLOAK_DEMO_READ_CLIENT_ID" \
+  -d "client_secret=$KEYCLOAK_DEMO_READ_CLIENT_SECRET" \
+  -d "username=$KEYCLOAK_OTHER_READ_USERNAME" \
+  -d "password=$KEYCLOAK_OTHER_READ_PASSWORD"
+```
+
+Use a demo-tenant read token against the API:
 
 ```bash
 READ_TOKEN="$(curl -s \
   -X POST http://localhost:9000/realms/combotto/protocol/openid-connect/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=password' \
-  -d "client_id=$KEYCLOAK_READ_CLIENT_ID" \
-  -d "client_secret=$KEYCLOAK_READ_CLIENT_SECRET" \
-  -d "username=$KEYCLOAK_READ_USERNAME" \
-  -d "password=$KEYCLOAK_READ_PASSWORD" | jq -r '.access_token')"
+  -d "client_id=$KEYCLOAK_DEMO_READ_CLIENT_ID" \
+  -d "client_secret=$KEYCLOAK_DEMO_READ_CLIENT_SECRET" \
+  -d "username=$KEYCLOAK_DEMO_READ_USERNAME" \
+  -d "password=$KEYCLOAK_DEMO_READ_PASSWORD" | jq -r '.access_token')"
 
 curl -H "Authorization: Bearer $READ_TOKEN" \
   http://localhost:8080/api/certificates
 ```
 
-Use the write token against the API:
+Inspect the tenant claim in the token:
+
+```bash
+echo "$READ_TOKEN" | cut -d '.' -f2 | base64 -d 2>/dev/null | jq '.tenantId, .scope, .preferred_username'
+```
+
+Use a demo-tenant write token against the API:
 
 ```bash
 WRITE_TOKEN="$(curl -s \
   -X POST http://localhost:9000/realms/combotto/protocol/openid-connect/token \
   -H 'Content-Type: application/x-www-form-urlencoded' \
   -d 'grant_type=password' \
-  -d "client_id=$KEYCLOAK_WRITE_CLIENT_ID" \
-  -d "client_secret=$KEYCLOAK_WRITE_CLIENT_SECRET" \
-  -d "username=$KEYCLOAK_WRITE_USERNAME" \
-  -d "password=$KEYCLOAK_WRITE_PASSWORD" | jq -r '.access_token')"
+  -d "client_id=$KEYCLOAK_DEMO_WRITE_CLIENT_ID" \
+  -d "client_secret=$KEYCLOAK_DEMO_WRITE_CLIENT_SECRET" \
+  -d "username=$KEYCLOAK_DEMO_WRITE_USERNAME" \
+  -d "password=$KEYCLOAK_DEMO_WRITE_PASSWORD" | jq -r '.access_token')"
 
 curl -X POST \
   -H "Authorization: Bearer $WRITE_TOKEN" \
@@ -149,6 +176,13 @@ curl -X POST \
     "notes": "Write token demo"
   }'
 ```
+
+Tenant enforcement rules:
+
+- The API requires the JWT `tenantId` claim on protected endpoints.
+- Create requests still include `tenantId` in the body for now, but it must match the authenticated token tenant.
+- Cross-tenant resource access returns `404`.
+- A mismatched request `tenantId` returns `400`.
 
 ## Observability
 
@@ -182,35 +216,43 @@ The Postman collection reads login details from environment variables instead of
    - [local-dev.postman_environment.json](/Users/thomaswintherbonderup/Development/combotto-control-plane-api/postman/local-dev.postman_environment.json)
 2. Select the `Combotto Local Dev` environment in Postman.
 3. Run `Authorization Demo - List Certificates Without Token` to see `401`.
-4. Run `Get Read Token`, then run:
+4. Run `Get Demo Read Token`, then run:
    - `List Certificates` and expect `200`
    - `Authorization Demo - Read Token Cannot Create Certificate` and expect `403`
    - `Observability / Metrics` and expect `200`
    - `Observability / Metric By Name - JVM Memory Used` and expect `200`
    - `Observability / Prometheus` and expect `200`
-5. Run `Get Write Token`, then run:
+5. Run `Get Demo Write Token`, then run:
    - `Create Certificate` and expect `201`
    - `Authorization Demo - Write Token Cannot List Certificates` and expect `403`
    - `Observability / Metrics` and expect `403` if the write token is still active
+6. Run `Get Other Read Token` or `Get Other Write Token` when you want to switch the collection to the `other-tenant` identity. The token requests store the decoded `tenantId` claim in `accessTokenTenantId`.
 
 The collection also includes:
 
 - `Observability / Health` and `Observability / Info` as public actuator checks
 - `Observability / Metrics Without Token` and `Observability / Prometheus Without Token` to verify `401`
+- tenant-bound create examples where the request body `tenantId` must match the JWT claim
 
 Expected environment variable names in Postman:
 
 - `baseUrl`
 - `keycloakBaseUrl`
 - `realm`
-- `readClientId`
-- `readClientSecret`
-- `readUsername`
-- `readPassword`
-- `writeClientId`
-- `writeClientSecret`
-- `writeUsername`
-- `writePassword`
+- `demoReadClientId`
+- `demoReadClientSecret`
+- `demoReadUsername`
+- `demoReadPassword`
+- `demoWriteClientId`
+- `demoWriteClientSecret`
+- `demoWriteUsername`
+- `demoWritePassword`
+- `demoTenantId`
+- `otherReadUsername`
+- `otherReadPassword`
+- `otherWriteUsername`
+- `otherWritePassword`
+- `otherTenantId`
 
 ## Features
 

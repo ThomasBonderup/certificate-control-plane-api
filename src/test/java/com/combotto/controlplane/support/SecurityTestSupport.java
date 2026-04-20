@@ -8,6 +8,8 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 public final class SecurityTestSupport {
   public static final String READ_SCOPE = "controlplane.read";
   public static final String WRITE_SCOPE = "controlplane.write";
+  public static final String DEMO_TENANT_ID = "demo-tenant";
+  public static final String OTHER_TENANT_ID = "other-tenant";
 
   private SecurityTestSupport() {
   }
@@ -17,8 +19,13 @@ public final class SecurityTestSupport {
   }
 
   public static RequestPostProcessor authenticated(String subject) {
+    return authenticated(subject, DEMO_TENANT_ID);
+  }
+
+  public static RequestPostProcessor authenticated(String subject, String tenantId) {
     return jwt().jwt(token -> token
         .claim("sub", subject)
+        .claim("tenantId", tenantId)
         .claim("scope", READ_SCOPE + " " + WRITE_SCOPE))
         .authorities(
             new SimpleGrantedAuthority("SCOPE_" + READ_SCOPE),
@@ -26,16 +33,35 @@ public final class SecurityTestSupport {
   }
 
   public static RequestPostProcessor readOnly() {
+    return readOnly(DEMO_TENANT_ID);
+  }
+
+  public static RequestPostProcessor readOnly(String tenantId) {
     return jwt().jwt(token -> token
         .claim("sub", "test-user")
+        .claim("tenantId", tenantId)
         .claim("scope", READ_SCOPE))
         .authorities(new SimpleGrantedAuthority("SCOPE_" + READ_SCOPE));
   }
 
   public static RequestPostProcessor writeOnly() {
+    return writeOnly(DEMO_TENANT_ID);
+  }
+
+  public static RequestPostProcessor writeOnly(String tenantId) {
     return jwt().jwt(token -> token
         .claim("sub", "test-user")
+        .claim("tenantId", tenantId)
         .claim("scope", WRITE_SCOPE))
         .authorities(new SimpleGrantedAuthority("SCOPE_" + WRITE_SCOPE));
+  }
+
+  public static RequestPostProcessor authenticatedWithoutTenant() {
+    return jwt().jwt(token -> token
+        .claim("sub", "test-user")
+        .claim("scope", READ_SCOPE + " " + WRITE_SCOPE))
+        .authorities(
+            new SimpleGrantedAuthority("SCOPE_" + READ_SCOPE),
+            new SimpleGrantedAuthority("SCOPE_" + WRITE_SCOPE));
   }
 }

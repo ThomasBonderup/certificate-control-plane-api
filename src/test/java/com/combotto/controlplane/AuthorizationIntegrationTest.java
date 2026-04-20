@@ -1,6 +1,7 @@
 package com.combotto.controlplane;
 
 import static com.combotto.controlplane.support.SecurityTestSupport.readOnly;
+import static com.combotto.controlplane.support.SecurityTestSupport.authenticatedWithoutTenant;
 import static com.combotto.controlplane.support.SecurityTestSupport.writeOnly;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -82,6 +83,13 @@ class AuthorizationIntegrationTest {
         .contentType(MediaType.APPLICATION_JSON)
         .content(validCreateCertificateJson()))
         .andExpect(status().isCreated());
+  }
+
+  @Test
+  void authenticatedRequest_withoutTenantClaim_isUnauthorized() throws Exception {
+    mockMvc.perform(get("/api/certificates")
+        .with(authenticatedWithoutTenant()))
+        .andExpect(status().isUnauthorized());
   }
 
   @Test

@@ -128,6 +128,28 @@ class CertificateControllerIntegrationTest {
   }
 
   @Test
+  void create_returns400_whenTenantIdDiffersFromAuthenticatedTenant() throws Exception {
+    mockMvc.perform(post("/api/certificates")
+        .with(authenticated())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(objectMapper.writeValueAsString(relativeCertificateRequest(
+            "other-tenant",
+            "Broker TLS Certificate",
+            "mqtt.example.com",
+            "Let's Encrypt",
+            "123456789",
+            "AB:CD:EF:12:34",
+            30,
+            90,
+            CertificateStatus.ACTIVE,
+            RenewalStatus.NOT_STATUS,
+            "thomas",
+            "first certificate"))))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.message").value("tenantId must match authenticated tenant"));
+  }
+
+  @Test
   void getById_returns200_andBody() throws Exception {
     UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
 
@@ -211,7 +233,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
-        .with(authenticated())
+        .with(authenticated("test-user", "test-tenant"))
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "test-tenant",
@@ -249,7 +271,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
-        .with(authenticated())
+        .with(authenticated("test-user", "test-tenant"))
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "test-tenant",
@@ -287,7 +309,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
-        .with(authenticated())
+        .with(authenticated("test-user", "test-tenant"))
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "test-tenant",
@@ -305,7 +327,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(get("/api/certificates")
-        .with(authenticated())
+        .with(authenticated("test-user", "test-tenant"))
         .param("renewalStatus", "IN_PROGRESS"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content.length()").value(1))
@@ -355,7 +377,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
-        .with(authenticated())
+        .with(authenticated("test-user", "other-tenant"))
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "other-tenant",
@@ -395,7 +417,7 @@ class CertificateControllerIntegrationTest {
         .andExpect(status().isCreated());
 
     mockMvc.perform(post("/api/certificates")
-        .with(authenticated())
+        .with(authenticated("test-user", "other-tenant"))
         .contentType(MediaType.APPLICATION_JSON)
         .content(objectMapper.writeValueAsString(relativeCertificateRequest(
             "other-tenant",
@@ -416,12 +438,10 @@ class CertificateControllerIntegrationTest {
         .with(authenticated())
         .param("tenantId", ""))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content.length()").value(2))
-        .andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.content.length()").value(1))
+        .andExpect(jsonPath("$.totalElements").value(1))
         .andExpect(jsonPath("$.content[*].tenantId",
-            org.hamcrest.Matchers.containsInAnyOrder(
-                "demo-tenant",
-                "other-tenant")));
+            org.hamcrest.Matchers.contains("demo-tenant")));
   }
 
   @Test

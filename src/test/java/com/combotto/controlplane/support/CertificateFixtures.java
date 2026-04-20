@@ -105,7 +105,7 @@ public final class CertificateFixtures {
       CreateCertificateRequest request,
       String subject) throws Exception {
     mockMvc.perform(post("/api/certificates")
-        .with(authenticated(subject))
+        .with(authenticated(subject, request.tenantId()))
         .contentType(MediaType.APPLICATION_JSON)
         .content(validCreateRequestJson(objectMapper, request)))
         .andExpect(status().isCreated());
@@ -137,7 +137,7 @@ public final class CertificateFixtures {
       CreateCertificateRequest request,
       String subject) throws Exception {
     String responseBody = mockMvc.perform(post("/api/certificates")
-        .with(authenticated(subject))
+        .with(authenticated(subject, request.tenantId()))
         .contentType(MediaType.APPLICATION_JSON)
         .content(validCreateRequestJson(objectMapper, request)))
         .andExpect(status().isCreated())

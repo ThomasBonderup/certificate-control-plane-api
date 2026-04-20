@@ -87,7 +87,7 @@ public final class AssetFixtures {
       ObjectMapper objectMapper,
       CreateAssetRequest request) throws Exception {
     String responseBody = mockMvc.perform(post("/api/assets")
-        .with(authenticated())
+        .with(authenticated("test-user", request.tenantId()))
         .contentType(MediaType.APPLICATION_JSON)
         .content(validCreateRequestJson(objectMapper, request)))
         .andExpect(status().isCreated())

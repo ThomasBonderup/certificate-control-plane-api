@@ -14,6 +14,7 @@ import com.combotto.controlplane.api.CertificateBindingResponse;
 import com.combotto.controlplane.api.CertificateResponse;
 import com.combotto.controlplane.api.CreateCertificateBindingRequest;
 import com.combotto.controlplane.common.CertificateMapper;
+import com.combotto.controlplane.common.CurrentTenantProvider;
 import com.combotto.controlplane.common.ResourceNotFoundException;
 import com.combotto.controlplane.model.AssetEntity;
 import com.combotto.controlplane.model.CertificateBindingEntity;
@@ -29,24 +30,29 @@ public class CertificateBindingService {
   private final AssetRepository assetRepository;
   private final CertificateBindingRepository certificateBindingRepository;
   private final CertificateMapper certificateMapper;
+  private final CurrentTenantProvider currentTenantProvider;
 
   public CertificateBindingService(
       CertificateRepository certificateRepository,
       AssetRepository assetRepository,
       CertificateBindingRepository certificateBindingRepository,
-      CertificateMapper certificateMapper) {
+      CertificateMapper certificateMapper,
+      CurrentTenantProvider currentTenantProvider) {
     this.certificateRepository = certificateRepository;
     this.assetRepository = assetRepository;
     this.certificateBindingRepository = certificateBindingRepository;
     this.certificateMapper = certificateMapper;
+    this.currentTenantProvider = currentTenantProvider;
   }
 
   @Transactional
   public CertificateBindingResponse create(UUID certificateId, CreateCertificateBindingRequest request) {
-    CertificateEntity certificate = certificateRepository.findById(certificateId)
+    String tenantId = currentTenantProvider.getRequiredTenantId();
+
+    CertificateEntity certificate = certificateRepository.findByIdAndTenantId(certificateId, tenantId)
         .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + certificateId));
 
-    AssetEntity asset = assetRepository.findById(request.assetId())
+    AssetEntity asset = assetRepository.findByIdAndTenantId(request.assetId(), tenantId)
         .orElseThrow(() -> new ResourceNotFoundException("Asset not found: " + request.assetId()));
 
     CertificateBindingEntity binding = new CertificateBindingEntity();
@@ -65,28 +71,31 @@ public class CertificateBindingService {
 
   @Transactional(readOnly = true)
   public Page<CertificateBindingResponse> listByCertificateId(UUID certificateId, Pageable pageable) {
-    if (!certificateRepository.existsById(certificateId)) {
+    String tenantId = currentTenantProvider.getRequiredTenantId();
+    if (!certificateRepository.existsByIdAndTenantId(certificateId, tenantId)) {
       throw new ResourceNotFoundException("Certificate not found: " + certificateId);
     }
-    return certificateBindingRepository.findByCertificateId(certificateId, pageable)
+    return certificateBindingRepository.findByCertificateIdAndCertificateTenantId(certificateId, tenantId, pageable)
         .map(this::toResponse);
   }
 
   @Transactional(readOnly = true)
   public Page<CertificateBindingResponse> listByAssetId(UUID assetId, Pageable pageable) {
-    if (!assetRepository.existsById(assetId)) {
+    String tenantId = currentTenantProvider.getRequiredTenantId();
+    if (!assetRepository.existsByIdAndTenantId(assetId, tenantId)) {
       throw new ResourceNotFoundException("Asset not found: " + assetId);
     }
-    return certificateBindingRepository.findByAssetId(assetId, pageable)
+    return certificateBindingRepository.findByAssetIdAndAssetTenantId(assetId, tenantId, pageable)
         .map(this::toResponse);
   }
 
   @Transactional(readOnly = true)
   public List<CertificateResponse> listCertificatesByAssetId(UUID assetId) {
-    if (!assetRepository.existsById(assetId)) {
+    String tenantId = currentTenantProvider.getRequiredTenantId();
+    if (!assetRepository.existsByIdAndTenantId(assetId, tenantId)) {
       throw new ResourceNotFoundException("Asset not found: " + assetId);
     }
-    return certificateBindingRepository.findByAssetId(assetId)
+    return certificateBindingRepository.findByAssetIdAndAssetTenantId(assetId, tenantId)
         .stream()
         .map(CertificateBindingEntity::getCertificate)
         .map(certificateMapper::toResponse)

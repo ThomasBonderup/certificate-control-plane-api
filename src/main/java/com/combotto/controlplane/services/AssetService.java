@@ -12,8 +12,10 @@ import org.springframework.stereotype.Service;
 import com.combotto.controlplane.api.AssetResponse;
 import com.combotto.controlplane.api.CreateAssetRequest;
 import com.combotto.controlplane.api.UpdateAssetRequest;
+import com.combotto.controlplane.common.CurrentTenantProvider;
 import com.combotto.controlplane.common.CurrentUserProvider;
 import com.combotto.controlplane.common.ResourceNotFoundException;
+import com.combotto.controlplane.common.TenantAccessValidator;
 import com.combotto.controlplane.model.AssetEntity;
 import com.combotto.controlplane.repositories.AssetRepository;
 
@@ -22,18 +24,28 @@ public class AssetService {
 
   private final AssetRepository assetRepository;
   private final CurrentUserProvider currentUserProvider;
+  private final CurrentTenantProvider currentTenantProvider;
+  private final TenantAccessValidator tenantAccessValidator;
 
-  public AssetService(AssetRepository assetRepository, CurrentUserProvider currentUserProvider) {
+  public AssetService(
+      AssetRepository assetRepository,
+      CurrentUserProvider currentUserProvider,
+      CurrentTenantProvider currentTenantProvider,
+      TenantAccessValidator tenantAccessValidator) {
     this.assetRepository = assetRepository;
     this.currentUserProvider = currentUserProvider;
+    this.currentTenantProvider = currentTenantProvider;
+    this.tenantAccessValidator = tenantAccessValidator;
   }
 
   public AssetResponse create(CreateAssetRequest request) {
+    String tenantId = currentTenantProvider.getRequiredTenantId();
+    tenantAccessValidator.validateTenantMatch(request.tenantId(), tenantId);
     OffsetDateTime now = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
 
     AssetEntity entity = new AssetEntity();
     entity.setId(UUID.randomUUID());
-    entity.setTenantId(request.tenantId());
+    entity.setTenantId(tenantId);
     entity.setName(request.name());
     entity.setAssetType(request.assetType());
     entity.setEnvironment(request.environment());
@@ -50,18 +62,18 @@ public class AssetService {
   }
 
   public Page<AssetResponse> list(Pageable pageable) {
-    return assetRepository.findAll(pageable)
+    return assetRepository.findAllByTenantId(currentTenantProvider.getRequiredTenantId(), pageable)
         .map(this::toResponse);
   }
 
   public AssetResponse getById(UUID id) {
-    AssetEntity entity = assetRepository.findById(id)
+    AssetEntity entity = assetRepository.findByIdAndTenantId(id, currentTenantProvider.getRequiredTenantId())
         .orElseThrow(() -> new ResourceNotFoundException("Asset not found: " + id));
     return toResponse(entity);
   }
 
   public AssetResponse update(UUID id, UpdateAssetRequest request) {
-    AssetEntity entity = assetRepository.findById(id)
+    AssetEntity entity = assetRepository.findByIdAndTenantId(id, currentTenantProvider.getRequiredTenantId())
         .orElseThrow(() -> new ResourceNotFoundException("Asset not found: " + id));
 
     if (request.name() != null)
@@ -84,7 +96,7 @@ public class AssetService {
   }
 
   public void delete(UUID id) {
-    if (!assetRepository.existsById(id)) {
+    if (!assetRepository.existsByIdAndTenantId(id, currentTenantProvider.getRequiredTenantId())) {
       throw new ResourceNotFoundException("Asset not found: " + id);
     }
     assetRepository.deleteById(id);
