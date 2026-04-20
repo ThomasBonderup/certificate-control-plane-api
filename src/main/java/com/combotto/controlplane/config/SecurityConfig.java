@@ -25,6 +25,10 @@ public class SecurityConfig {
                 "/actuator/health/**",
                 "/actuator/info")
             .permitAll()
+            .requestMatchers(HttpMethod.GET, "/actuator/metrics", "/actuator/metrics/**")
+            .hasAuthority("SCOPE_controlplane.read")
+            .requestMatchers(HttpMethod.GET, "/actuator/prometheus")
+            .hasAuthority("SCOPE_controlplane.read")
             .requestMatchers(HttpMethod.GET, "/api/**").hasAuthority("SCOPE_controlplane.read")
             .requestMatchers(HttpMethod.POST, "/api/**").hasAuthority("SCOPE_controlplane.write")
             .requestMatchers(HttpMethod.PATCH, "/api/**").hasAuthority("SCOPE_controlplane.write")
