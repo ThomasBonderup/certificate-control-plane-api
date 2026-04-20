@@ -138,6 +138,22 @@ class CertificateBindingControllerIntegrationTest {
   }
 
   @Test
+  void create_returns404_whenAssetBelongsToDifferentTenant() throws Exception {
+    UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
+    UUID otherTenantAssetId = AssetFixtures.createAndReturnId(
+        mockMvc,
+        objectMapper,
+        AssetFixtures.validCreateRequest("other-tenant", "Other Tenant Asset"));
+
+    mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
+        .with(authenticated())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(CertificateBindingFixtures.validCreateRequestJson(objectMapper, otherTenantAssetId)))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.message").value("Asset not found: " + otherTenantAssetId));
+  }
+
+  @Test
   void listByCertificateId_returns200_andOnlyBindingsForCertificate() throws Exception {
     UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper, "Broker TLS Certificate");
     UUID otherCertificateId = CertificateFixtures.createAndReturnId(

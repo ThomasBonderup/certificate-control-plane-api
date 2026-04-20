@@ -6,8 +6,10 @@ import com.combotto.controlplane.api.CreateCertificateRequest;
 import com.combotto.controlplane.api.UpdateCertificateRequest;
 import com.combotto.controlplane.common.BadRequestException;
 import com.combotto.controlplane.common.CertificateMapper;
+import com.combotto.controlplane.common.CurrentTenantProvider;
 import com.combotto.controlplane.common.CurrentUserProvider;
 import com.combotto.controlplane.common.ResourceNotFoundException;
+import com.combotto.controlplane.common.TenantAccessValidator;
 import com.combotto.controlplane.model.CertificateEntity;
 import com.combotto.controlplane.model.CertificateStatus;
 import com.combotto.controlplane.model.RenewalStatus;
@@ -28,25 +30,34 @@ public class CertificateService {
   private final CertificateRepository certificateRepository;
   private final CertificateMapper certificateMapper;
   private final CurrentUserProvider currentUserProvider;
+  private final CurrentTenantProvider currentTenantProvider;
+  private final TenantAccessValidator tenantAccessValidator;
   private final MeterRegistry meterRegistry;
 
   public CertificateService(
       CertificateRepository certificateRepository,
       CertificateMapper certificateMapper,
       CurrentUserProvider currentUserProvider,
+      CurrentTenantProvider currentTenantProvider,
+      TenantAccessValidator tenantAccessValidator,
       MeterRegistry meterRegistry) {
     this.certificateRepository = certificateRepository;
     this.certificateMapper = certificateMapper;
     this.currentUserProvider = currentUserProvider;
+    this.currentTenantProvider = currentTenantProvider;
+    this.tenantAccessValidator = tenantAccessValidator;
     this.meterRegistry = meterRegistry;
   }
 
   public CertificateResponse create(CreateCertificateRequest request) {
+    String tenantId = currentTenantProvider.getRequiredTenantId();
+    tenantAccessValidator.validateTenantMatch(request.tenantId(), tenantId);
+
     OffsetDateTime now = currentTimestamp();
 
     CertificateEntity entity = new CertificateEntity();
     entity.setId(UUID.randomUUID());
-    entity.setTenantId(request.tenantId());
+    entity.setTenantId(tenantId);
     entity.setName(request.name());
     entity.setCommonName(request.commonName());
     entity.setIssuer(request.issuer());
@@ -73,10 +84,11 @@ public class CertificateService {
       CertificateStatus status,
       RenewalStatus renewalStatus,
       Pageable pageable) {
-
+    String claimTenantId = currentTenantProvider.getRequiredTenantId();
     String normalizedTenantId = normalize(tenantId);
+    tenantAccessValidator.validateTenantMatch(normalizedTenantId, claimTenantId);
 
-    return certificateRepository.findByFilters(normalizedTenantId, status, renewalStatus, pageable)
+    return certificateRepository.findByFilters(claimTenantId, status, renewalStatus, pageable)
         .map(certificateMapper::toResponse);
   }
 
@@ -86,15 +98,17 @@ public class CertificateService {
       String owner,
       RenewalStatus renewalStatus,
       Pageable pageable) {
+    String claimTenantId = currentTenantProvider.getRequiredTenantId();
     OffsetDateTime now = OffsetDateTime.now();
     OffsetDateTime threshold = now.plusDays(days);
     String normalizedTenantId = normalize(tenantId);
+    tenantAccessValidator.validateTenantMatch(normalizedTenantId, claimTenantId);
     String normalizedOwner = normalize(owner);
 
     return certificateRepository.findExpiringSoonByFilters(
         now,
         threshold,
-        normalizedTenantId,
+        claimTenantId,
         normalizedOwner,
         renewalStatus,
         pageable)
@@ -102,12 +116,14 @@ public class CertificateService {
   }
 
   public Page<CertificateResponse> listAttentionNeeded(int days, Pageable pageable) {
+    String tenantId = currentTenantProvider.getRequiredTenantId();
     OffsetDateTime now = OffsetDateTime.now();
     OffsetDateTime threshold = now.plusDays(days);
 
     return certificateRepository.findAttentionNeeded(
         now,
         threshold,
+        tenantId,
         RenewalStatus.NOT_STATUS,
         RenewalStatus.PLANNED,
         RenewalStatus.IN_PROGRESS,
@@ -192,7 +208,7 @@ public class CertificateService {
   }
 
   private CertificateEntity findCertificate(UUID id) {
-    return certificateRepository.findById(id)
+    return certificateRepository.findByIdAndTenantId(id, currentTenantProvider.getRequiredTenantId())
         .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + id));
   }
 
@@ -202,22 +218,23 @@ public class CertificateService {
   }
 
   public void delete(UUID id) {
-    if (!certificateRepository.existsById(id)) {
+    if (!certificateRepository.existsByIdAndTenantId(id, currentTenantProvider.getRequiredTenantId())) {
       throw new ResourceNotFoundException("Certificate not found: " + id);
     }
     certificateRepository.deleteById(id);
   }
 
   public CertificateSummaryResponse summary() {
+    String tenantId = currentTenantProvider.getRequiredTenantId();
     OffsetDateTime now = OffsetDateTime.now();
     OffsetDateTime soon = now.plusDays(30);
 
     return new CertificateSummaryResponse(
-        certificateRepository.count(),
-        certificateRepository.countByStatus(CertificateStatus.ACTIVE),
-        certificateRepository.countExpiringSoon(now, soon),
-        certificateRepository.countByStatus(CertificateStatus.EXPIRED),
-        certificateRepository.countByRenewalStatus(RenewalStatus.IN_PROGRESS));
+        certificateRepository.countByTenantId(tenantId),
+        certificateRepository.countByTenantIdAndStatus(tenantId, CertificateStatus.ACTIVE),
+        certificateRepository.countExpiringSoon(now, tenantId, soon),
+        certificateRepository.countByTenantIdAndStatus(tenantId, CertificateStatus.EXPIRED),
+        certificateRepository.countByTenantIdAndRenewalStatus(tenantId, RenewalStatus.IN_PROGRESS));
   }
 
   private String normalize(String value) {

@@ -16,6 +16,10 @@ import com.combotto.controlplane.model.RenewalStatus;
 
 public interface CertificateRepository extends JpaRepository<CertificateEntity, UUID> {
 
+  java.util.Optional<CertificateEntity> findByIdAndTenantId(UUID id, String tenantId);
+
+  boolean existsByIdAndTenantId(UUID id, String tenantId);
+
   @Query("""
           select c
           from CertificateEntity c
@@ -63,7 +67,9 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
           select c
           from CertificateEntity c
           where
-            (c.notAfter is not null and c.notAfter <= :now)
+            c.tenantId = :tenantId
+            and (
+              (c.notAfter is not null and c.notAfter <= :now)
             or
             (c.renewalStatus = :renewalBlocked)
             or
@@ -79,12 +85,15 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
                 or c.renewalStatus = :renewalInProgress
               )
             )
+          )
           """,
       countQuery = """
           select count(c)
           from CertificateEntity c
           where
-            (c.notAfter is not null and c.notAfter <= :now)
+            c.tenantId = :tenantId
+            and (
+              (c.notAfter is not null and c.notAfter <= :now)
             or
             (c.renewalStatus = :renewalBlocked)
             or
@@ -100,17 +109,21 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
                 or c.renewalStatus = :renewalInProgress
               )
             )
+          )
           """)
   Page<CertificateEntity> findAttentionNeeded(
       @Param("now") OffsetDateTime now,
       @Param("threshold") OffsetDateTime threshold,
+      @Param("tenantId") String tenantId,
       @Param("renewalNotStarted") RenewalStatus renewalNotStarted,
       @Param("renewalPlanned") RenewalStatus renewalPlanned,
       @Param("renewalInProgress") RenewalStatus renewalInProgress,
       @Param("renewalBlocked") RenewalStatus renewalBlocked,
       Pageable pageable);
 
-  long countByStatus(CertificateStatus status);
+  long countByTenantId(String tenantId);
+
+  long countByTenantIdAndStatus(String tenantId, CertificateStatus status);
 
   @Query("""
       select count(c)
@@ -118,10 +131,12 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
       where c.notAfter is not null
         and c.notAfter > :now
         and c.notAfter <= :threshold
+        and c.tenantId = :tenantId
       """)
   long countExpiringSoon(
       @Param("now") OffsetDateTime now,
+      @Param("tenantId") String tenantId,
       @Param("threshold") OffsetDateTime threshold);
 
-  long countByRenewalStatus(RenewalStatus renewalStatus);
+  long countByTenantIdAndRenewalStatus(String tenantId, RenewalStatus renewalStatus);
 }

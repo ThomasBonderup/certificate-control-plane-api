@@ -71,16 +71,24 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
-      KEYCLOAK_READ_CLIENT_ID: ${KEYCLOAK_READ_CLIENT_ID:-control-plane-read-cli}
-      KEYCLOAK_READ_CLIENT_SECRET: ${KEYCLOAK_READ_CLIENT_SECRET:-local-dev-read-secret}
-      KEYCLOAK_READ_USERNAME: ${KEYCLOAK_READ_USERNAME:-local-reader}
-      KEYCLOAK_READ_PASSWORD: ${KEYCLOAK_READ_PASSWORD:-local-reader-password}
-      KEYCLOAK_READ_EMAIL: ${KEYCLOAK_READ_EMAIL:-local-reader@example.com}
-      KEYCLOAK_WRITE_CLIENT_ID: ${KEYCLOAK_WRITE_CLIENT_ID:-control-plane-write-cli}
-      KEYCLOAK_WRITE_CLIENT_SECRET: ${KEYCLOAK_WRITE_CLIENT_SECRET:-local-dev-write-secret}
-      KEYCLOAK_WRITE_USERNAME: ${KEYCLOAK_WRITE_USERNAME:-local-writer}
-      KEYCLOAK_WRITE_PASSWORD: ${KEYCLOAK_WRITE_PASSWORD:-local-writer-password}
-      KEYCLOAK_WRITE_EMAIL: ${KEYCLOAK_WRITE_EMAIL:-local-writer@example.com}
+      KEYCLOAK_DEMO_READ_CLIENT_ID: ${KEYCLOAK_DEMO_READ_CLIENT_ID:-control-plane-demo-read-cli}
+      KEYCLOAK_DEMO_READ_CLIENT_SECRET: ${KEYCLOAK_DEMO_READ_CLIENT_SECRET:-local-dev-demo-read-secret}
+      KEYCLOAK_DEMO_WRITE_CLIENT_ID: ${KEYCLOAK_DEMO_WRITE_CLIENT_ID:-control-plane-demo-write-cli}
+      KEYCLOAK_DEMO_WRITE_CLIENT_SECRET: ${KEYCLOAK_DEMO_WRITE_CLIENT_SECRET:-local-dev-demo-write-secret}
+      KEYCLOAK_DEMO_READ_USERNAME: ${KEYCLOAK_DEMO_READ_USERNAME:-local-demo-reader}
+      KEYCLOAK_DEMO_READ_PASSWORD: ${KEYCLOAK_DEMO_READ_PASSWORD:-local-demo-reader-password}
+      KEYCLOAK_DEMO_READ_EMAIL: ${KEYCLOAK_DEMO_READ_EMAIL:-local-demo-reader@example.com}
+      KEYCLOAK_DEMO_WRITE_USERNAME: ${KEYCLOAK_DEMO_WRITE_USERNAME:-local-demo-writer}
+      KEYCLOAK_DEMO_WRITE_PASSWORD: ${KEYCLOAK_DEMO_WRITE_PASSWORD:-local-demo-writer-password}
+      KEYCLOAK_DEMO_WRITE_EMAIL: ${KEYCLOAK_DEMO_WRITE_EMAIL:-local-demo-writer@example.com}
+      KEYCLOAK_DEMO_TENANT_ID: ${KEYCLOAK_DEMO_TENANT_ID:-demo-tenant}
+      KEYCLOAK_OTHER_READ_USERNAME: ${KEYCLOAK_OTHER_READ_USERNAME:-local-other-reader}
+      KEYCLOAK_OTHER_READ_PASSWORD: ${KEYCLOAK_OTHER_READ_PASSWORD:-local-other-reader-password}
+      KEYCLOAK_OTHER_READ_EMAIL: ${KEYCLOAK_OTHER_READ_EMAIL:-local-other-reader@example.com}
+      KEYCLOAK_OTHER_WRITE_USERNAME: ${KEYCLOAK_OTHER_WRITE_USERNAME:-local-other-writer}
+      KEYCLOAK_OTHER_WRITE_PASSWORD: ${KEYCLOAK_OTHER_WRITE_PASSWORD:-local-other-writer-password}
+      KEYCLOAK_OTHER_WRITE_EMAIL: ${KEYCLOAK_OTHER_WRITE_EMAIL:-local-other-writer@example.com}
+      KEYCLOAK_OTHER_TENANT_ID: ${KEYCLOAK_OTHER_TENANT_ID:-other-tenant}
     volumes:
       - ./keycloak:/opt/keycloak/data/local-config
     entrypoint:

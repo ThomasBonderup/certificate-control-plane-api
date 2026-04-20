@@ -14,4 +14,9 @@ public interface CertificateBindingRepository extends JpaRepository<CertificateB
   Page<CertificateBindingEntity> findByAssetId(UUID assetId, Pageable pageable);
   List<CertificateBindingEntity> findByCertificateId(UUID certificateId);
   Page<CertificateBindingEntity> findByCertificateId(UUID certificateId, Pageable pageable);
+  List<CertificateBindingEntity> findByAssetIdAndAssetTenantId(UUID assetId, String tenantId);
+  Page<CertificateBindingEntity> findByAssetIdAndAssetTenantId(UUID assetId, String tenantId, Pageable pageable);
+  List<CertificateBindingEntity> findByCertificateIdAndCertificateTenantId(UUID certificateId, String tenantId);
+  Page<CertificateBindingEntity> findByCertificateIdAndCertificateTenantId(
+      UUID certificateId, String tenantId, Pageable pageable);
 }
