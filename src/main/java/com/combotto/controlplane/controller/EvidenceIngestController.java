@@ -10,9 +10,13 @@ import com.combotto.controlplane.api.IngestEvidenceRequest;
 import com.combotto.controlplane.mappers.EvidenceMapper;
 import com.combotto.controlplane.model.EvidenceEnvelope;
 import com.combotto.controlplane.services.EvidenceIngestService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/evidence")
+@Tag(name = "Evidence", description = "Ingest raw evidence from probes and collectors")
 public class EvidenceIngestController {
 
   private final EvidenceIngestService ingestService;
@@ -21,6 +25,8 @@ public class EvidenceIngestController {
     this.ingestService = ingestService;
   }
 
+  @Operation(summary = "Ingest evidence", description = "Accepts a raw evidence payload and forwards it into the ingest pipeline")
+  @ApiResponse(responseCode = "202", description = "Evidence accepted for ingestion")
   @PostMapping
   public ResponseEntity<Void> ingest(@RequestBody IngestEvidenceRequest req) {
     System.out.println("HIT EvidenceIngestController: " + req);

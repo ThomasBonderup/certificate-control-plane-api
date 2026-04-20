@@ -207,6 +207,57 @@ curl -H "Authorization: Bearer $READ_TOKEN" \
   http://localhost:8080/actuator/prometheus
 ```
 
+## OpenAPI
+
+The API publishes an OpenAPI document and Swagger UI in local development:
+
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+
+Swagger UI uses the same bearer token flow as the API. Click `Authorize`, paste a bearer token without the `Bearer ` prefix, and then call protected endpoints.
+
+Recommended local flow:
+
+1. Start the stack with `docker compose up -d postgres kafka keycloak`
+2. Start the API
+3. Fetch a read or write token from Keycloak
+4. Open Swagger UI and authorize with that token
+
+Pagination and sorting endpoints follow Spring Data conventions:
+
+- `page`: zero-based page number
+- `size`: page size
+- `sort`: `field,direction`
+
+Examples:
+
+```text
+sort=createdAt,desc
+sort=notAfter,asc
+```
+
+Swagger previously rendered an invalid placeholder sort value for some pageable endpoints. The API now ignores malformed sort values and falls back to the endpoint default sort, but the intended values are still the explicit `field,direction` forms above.
+
+Common certificate endpoint examples:
+
+```bash
+curl -H "Authorization: Bearer $READ_TOKEN" \
+  "http://localhost:8080/api/certificates?tenantId=demo-tenant&sort=createdAt,desc"
+
+curl -H "Authorization: Bearer $READ_TOKEN" \
+  "http://localhost:8080/api/certificates/expiring-soon?days=30&sort=notAfter,asc"
+
+curl -H "Authorization: Bearer $READ_TOKEN" \
+  "http://localhost:8080/api/certificates/attention-needed?days=30&sort=notAfter,asc"
+```
+
+Auth expectations:
+
+- `/v3/api-docs`, `/swagger-ui.html`, and `/swagger-ui/**` are public in local development
+- `GET /api/**` requires `controlplane.read`
+- `POST`, `PATCH`, and `DELETE` on `/api/**` require `controlplane.write`
+- Create requests that include `tenantId` must still match the authenticated token tenant
+
 ## Postman Setup
 
 The Postman collection reads login details from environment variables instead of storing them in the collection.
