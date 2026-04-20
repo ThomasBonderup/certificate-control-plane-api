@@ -84,6 +84,46 @@ class AuthorizationIntegrationTest {
         .andExpect(status().isCreated());
   }
 
+  @Test
+  void unauthenticated_cannotReadActuatorMetrics() throws Exception {
+    mockMvc.perform(get("/actuator/metrics"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void readScope_canReadActuatorMetrics() throws Exception {
+    mockMvc.perform(get("/actuator/metrics")
+        .with(readOnly()))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void writeOnlyScope_cannotReadActuatorMetrics() throws Exception {
+    mockMvc.perform(get("/actuator/metrics")
+        .with(writeOnly()))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void unauthenticated_cannotReadActuatorPrometheus() throws Exception {
+    mockMvc.perform(get("/actuator/prometheus"))
+        .andExpect(status().isUnauthorized());
+  }
+
+  @Test
+  void readScope_canReadActuatorPrometheus() throws Exception {
+    mockMvc.perform(get("/actuator/prometheus")
+        .with(readOnly()))
+        .andExpect(status().isOk());
+  }
+
+  @Test
+  void writeOnlyScope_cannotReadActuatorPrometheus() throws Exception {
+    mockMvc.perform(get("/actuator/prometheus")
+        .with(writeOnly()))
+        .andExpect(status().isForbidden());
+  }
+
   private String validCreateCertificateJson() throws Exception {
     return """
         {

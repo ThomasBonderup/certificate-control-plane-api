@@ -13,6 +13,8 @@ import com.combotto.controlplane.model.CertificateStatus;
 import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
 
+import io.micrometer.core.instrument.MeterRegistry;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -26,14 +28,17 @@ public class CertificateService {
   private final CertificateRepository certificateRepository;
   private final CertificateMapper certificateMapper;
   private final CurrentUserProvider currentUserProvider;
+  private final MeterRegistry meterRegistry;
 
   public CertificateService(
       CertificateRepository certificateRepository,
       CertificateMapper certificateMapper,
-      CurrentUserProvider currentUserProvider) {
+      CurrentUserProvider currentUserProvider,
+      MeterRegistry meterRegistry) {
     this.certificateRepository = certificateRepository;
     this.certificateMapper = certificateMapper;
     this.currentUserProvider = currentUserProvider;
+    this.meterRegistry = meterRegistry;
   }
 
   public CertificateResponse create(CreateCertificateRequest request) {
@@ -162,11 +167,15 @@ public class CertificateService {
     if (newStatus != currentStatus) {
       entity.setRenewalStatus(newStatus);
       entity.setRenewalUpdatedAt(now);
+      meterRegistry.counter(
+          "combotto.certificate.renewal.status.change",
+          "status", entity.getRenewalStatus().name()).increment();
     }
 
     if (newStatus == RenewalStatus.BLOCKED) {
       validateBlockedReason(request.blockedReason());
       entity.setBlockedReason(request.blockedReason());
+      meterRegistry.counter("combotto.certificate.renewal.blocked").increment();
     } else {
       entity.setBlockedReason(null);
     }

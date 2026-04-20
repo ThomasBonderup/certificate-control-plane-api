@@ -150,6 +150,29 @@ curl -X POST \
   }'
 ```
 
+## Observability
+
+The service exposes Spring Boot Actuator endpoints on `http://localhost:8080/actuator`.
+
+- `/actuator/health` is public and returns basic health status
+- `/actuator/info` is public
+- `/actuator/metrics` requires a JWT with `controlplane.read`
+- `/actuator/metrics/{name}` requires a JWT with `controlplane.read`
+- `/actuator/prometheus` requires a JWT with `controlplane.read`
+
+Example with a read token:
+
+```bash
+curl -H "Authorization: Bearer $READ_TOKEN" \
+  http://localhost:8080/actuator/metrics
+
+curl -H "Authorization: Bearer $READ_TOKEN" \
+  http://localhost:8080/actuator/metrics/jvm.memory.used
+
+curl -H "Authorization: Bearer $READ_TOKEN" \
+  http://localhost:8080/actuator/prometheus
+```
+
 ## Postman Setup
 
 The Postman collection reads login details from environment variables instead of storing them in the collection.
@@ -162,9 +185,18 @@ The Postman collection reads login details from environment variables instead of
 4. Run `Get Read Token`, then run:
    - `List Certificates` and expect `200`
    - `Authorization Demo - Read Token Cannot Create Certificate` and expect `403`
+   - `Observability / Metrics` and expect `200`
+   - `Observability / Metric By Name - JVM Memory Used` and expect `200`
+   - `Observability / Prometheus` and expect `200`
 5. Run `Get Write Token`, then run:
    - `Create Certificate` and expect `201`
    - `Authorization Demo - Write Token Cannot List Certificates` and expect `403`
+   - `Observability / Metrics` and expect `403` if the write token is still active
+
+The collection also includes:
+
+- `Observability / Health` and `Observability / Info` as public actuator checks
+- `Observability / Metrics Without Token` and `Observability / Prometheus Without Token` to verify `401`
 
 Expected environment variable names in Postman:
 
