@@ -36,5 +36,4 @@ public class CorrelationFilter extends OncePerRequestFilter {
       MDC.remove(MDC_KEY);
     }
   }
-
 }

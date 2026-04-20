@@ -503,6 +503,45 @@ class CertificateControllerIntegrationTest {
   }
 
   @Test
+  void list_ignoresMalformedSwaggerSortValue_andFallsBackToDefaultSort() throws Exception {
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Older Certificate",
+        "older.example.com",
+        "Combotto CA",
+        "older-serial",
+        "older-fingerprint",
+        30,
+        31,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "older certificate"));
+
+    CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
+        "demo-tenant",
+        "Newer Certificate",
+        "newer.example.com",
+        "Combotto CA",
+        "newer-serial",
+        "newer-fingerprint",
+        30,
+        32,
+        CertificateStatus.ACTIVE,
+        RenewalStatus.NOT_STATUS,
+        "thomas",
+        "newer certificate"));
+
+    mockMvc.perform(get("/api/certificates")
+        .with(authenticated())
+        .param("sort", "[\"string\"]"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content.length()").value(2))
+        .andExpect(jsonPath("$.content[0].name").value("Newer Certificate"))
+        .andExpect(jsonPath("$.content[1].name").value("Older Certificate"));
+  }
+
+  @Test
   void list_returnsRemainingItemsOnSecondPage() throws Exception {
     CertificateFixtures.create(mockMvc, objectMapper, relativeCertificateRequest(
         "demo-tenant",
