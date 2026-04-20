@@ -42,6 +42,12 @@ public class CertificateEntity {
   @Column(name = "renewal_status", nullable = false)
   private RenewalStatus renewalStatus;
 
+  @Column(name = "blocked_reason")
+  private String blockedReason;
+
+  @Column(name = "renewal_updated_at")
+  private OffsetDateTime renewalUpdatedAt;
+
   private String owner;
 
   private String notes;
@@ -144,6 +150,22 @@ public class CertificateEntity {
 
   public void setRenewalStatus(RenewalStatus renewalStatus) {
     this.renewalStatus = renewalStatus;
+  }
+
+  public String getBlockedReason() {
+    return blockedReason;
+  }
+
+  public void setBlockedReason(String blockedReason) {
+    this.blockedReason = blockedReason;
+  }
+
+  public OffsetDateTime getRenewalUpdatedAt() {
+    return renewalUpdatedAt;
+  }
+
+  public void setRenewalUpdatedAt(OffsetDateTime renewalUpdatedAt) {
+    this.renewalUpdatedAt = renewalUpdatedAt;
   }
 
   public String getOwner() {

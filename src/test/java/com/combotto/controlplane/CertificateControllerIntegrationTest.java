@@ -77,6 +77,8 @@ class CertificateControllerIntegrationTest {
         .andExpect(jsonPath("$.name").value("Broker TLS Certificate"))
         .andExpect(jsonPath("$.status").value("ACTIVE"))
         .andExpect(jsonPath("$.renewalStatus").value("NOT_STATUS"))
+        .andExpect(jsonPath("$.blockedReason").isEmpty())
+        .andExpect(jsonPath("$.renewalUpdatedAt").isEmpty())
         .andExpect(jsonPath("$.createdBy").value(currentUser))
         .andExpect(jsonPath("$.updatedBy").value(currentUser))
         .andReturn()
@@ -91,6 +93,8 @@ class CertificateControllerIntegrationTest {
     assertThat(saved.orElseThrow().getTenantId()).isEqualTo("demo-tenant");
     assertThat(saved.orElseThrow().getName()).isEqualTo("Broker TLS Certificate");
     assertThat(saved.orElseThrow().getIssuer()).isEqualTo("Let's Encrypt");
+    assertThat(saved.orElseThrow().getBlockedReason()).isNull();
+    assertThat(saved.orElseThrow().getRenewalUpdatedAt()).isNull();
     assertThat(saved.orElseThrow().getCreatedBy()).isEqualTo(currentUser);
     assertThat(saved.orElseThrow().getUpdatedBy()).isEqualTo(currentUser);
   }
@@ -1183,7 +1187,8 @@ class CertificateControllerIntegrationTest {
         {
           "name": "Updated Broker TLS Certificate",
           "status": "EXPIRING_SOON",
-          "renewalStatus": "PLANNED",
+          "renewalStatus": "BLOCKED",
+          "blockedReason": "Waiting for maintenance window",
           "owner": "platform-team",
           "notes": "updated certificate"
         }
@@ -1197,7 +1202,9 @@ class CertificateControllerIntegrationTest {
         .andExpect(jsonPath("$.id").value(id.toString()))
         .andExpect(jsonPath("$.name").value("Updated Broker TLS Certificate"))
         .andExpect(jsonPath("$.status").value("EXPIRING_SOON"))
-        .andExpect(jsonPath("$.renewalStatus").value("PLANNED"))
+        .andExpect(jsonPath("$.renewalStatus").value("BLOCKED"))
+        .andExpect(jsonPath("$.blockedReason").value("Waiting for maintenance window"))
+        .andExpect(jsonPath("$.renewalUpdatedAt").isNotEmpty())
         .andExpect(jsonPath("$.owner").value("platform-team"))
         .andExpect(jsonPath("$.notes").value("updated certificate"))
         .andExpect(jsonPath("$.createdBy").value(createdBy))
@@ -1207,8 +1214,31 @@ class CertificateControllerIntegrationTest {
     assertThat(saved).isPresent();
     assertThat(saved.orElseThrow().getName()).isEqualTo("Updated Broker TLS Certificate");
     assertThat(saved.orElseThrow().getOwner()).isEqualTo("platform-team");
+    assertThat(saved.orElseThrow().getBlockedReason()).isEqualTo("Waiting for maintenance window");
+    assertThat(saved.orElseThrow().getRenewalUpdatedAt()).isNotNull();
     assertThat(saved.orElseThrow().getCreatedBy()).isEqualTo(createdBy);
     assertThat(saved.orElseThrow().getUpdatedBy()).isEqualTo(updatedBy);
+  }
+
+  @Test
+  void update_returns400_whenBlockedStatusMissingBlockedReason() throws Exception {
+    UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
+
+    String updateRequest = """
+        {
+          "renewalStatus": "BLOCKED"
+        }
+        """;
+
+    mockMvc.perform(patch("/api/certificates/{id}", id)
+        .with(authenticated())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(updateRequest))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.status").value(400))
+        .andExpect(jsonPath("$.error").value("Bad Request"))
+        .andExpect(jsonPath("$.message").value("blockedReason is required when renewalStatus is BLOCKED"))
+        .andExpect(jsonPath("$.path").value("/api/certificates/" + id));
   }
 
   @Test

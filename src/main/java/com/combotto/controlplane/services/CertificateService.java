@@ -4,6 +4,7 @@ import com.combotto.controlplane.api.CertificateResponse;
 import com.combotto.controlplane.api.CertificateSummaryResponse;
 import com.combotto.controlplane.api.CreateCertificateRequest;
 import com.combotto.controlplane.api.UpdateCertificateRequest;
+import com.combotto.controlplane.common.BadRequestException;
 import com.combotto.controlplane.common.CertificateMapper;
 import com.combotto.controlplane.common.CurrentUserProvider;
 import com.combotto.controlplane.common.ResourceNotFoundException;
@@ -36,7 +37,7 @@ public class CertificateService {
   }
 
   public CertificateResponse create(CreateCertificateRequest request) {
-    OffsetDateTime now = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
+    OffsetDateTime now = currentTimestamp();
 
     CertificateEntity entity = new CertificateEntity();
     entity.setId(UUID.randomUUID());
@@ -111,15 +112,22 @@ public class CertificateService {
   }
 
   public CertificateResponse getById(UUID id) {
-    CertificateEntity entity = certificateRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + id));
+    CertificateEntity entity = findCertificate(id);
     return certificateMapper.toResponse(entity);
   }
 
   public CertificateResponse update(UUID id, UpdateCertificateRequest request) {
-    CertificateEntity entity = certificateRepository.findById(id)
-        .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + id));
+    CertificateEntity entity = findCertificate(id);
+    OffsetDateTime now = currentTimestamp();
 
+    applyMetadataUpdates(request, entity);
+    applyRenewalWorkflow(request, entity, now);
+    stampAuditFields(entity, now);
+
+    return certificateMapper.toResponse(certificateRepository.save(entity));
+  }
+
+  private void applyMetadataUpdates(UpdateCertificateRequest request, CertificateEntity entity) {
     if (request.name() != null)
       entity.setName(request.name());
     if (request.commonName() != null)
@@ -136,19 +144,52 @@ public class CertificateService {
       entity.setNotAfter(request.notAfter());
     if (request.status() != null)
       entity.setStatus(request.status());
-    if (request.renewalStatus() != null)
-      entity.setRenewalStatus(request.renewalStatus());
     if (request.owner() != null)
       entity.setOwner(request.owner());
     if (request.notes() != null)
       entity.setNotes(request.notes());
+  }
 
-    entity.setUpdatedAt(OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS));
+  private void applyRenewalWorkflow(UpdateCertificateRequest request, CertificateEntity entity, OffsetDateTime now) {
 
-    String currentUser = currentUserProvider.getCurrentUserId();
-    entity.setUpdatedBy(currentUser);
+    if (request.renewalStatus() == null) {
+      return;
+    }
 
-    return certificateMapper.toResponse(certificateRepository.save(entity));
+    RenewalStatus newStatus = request.renewalStatus();
+    RenewalStatus currentStatus = entity.getRenewalStatus();
+
+    if (newStatus != currentStatus) {
+      entity.setRenewalStatus(newStatus);
+      entity.setRenewalUpdatedAt(now);
+    }
+
+    if (newStatus == RenewalStatus.BLOCKED) {
+      validateBlockedReason(request.blockedReason());
+      entity.setBlockedReason(request.blockedReason());
+    } else {
+      entity.setBlockedReason(null);
+    }
+  }
+
+  private void validateBlockedReason(String blockedReason) {
+    if (blockedReason == null || blockedReason.isBlank()) {
+      throw new BadRequestException("blockedReason is required when renewalStatus is BLOCKED");
+    }
+  }
+
+  private OffsetDateTime currentTimestamp() {
+    return OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
+  }
+
+  private CertificateEntity findCertificate(UUID id) {
+    return certificateRepository.findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + id));
+  }
+
+  private void stampAuditFields(CertificateEntity entity, OffsetDateTime now) {
+    entity.setUpdatedAt(now);
+    entity.setUpdatedBy(currentUserProvider.getCurrentUserId());
   }
 
   public void delete(UUID id) {

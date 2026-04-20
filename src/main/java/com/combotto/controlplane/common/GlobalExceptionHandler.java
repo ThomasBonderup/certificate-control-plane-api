@@ -15,6 +15,17 @@ import jakarta.servlet.http.HttpServletRequest;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+  @ExceptionHandler(BadRequestException.class)
+  @ResponseStatus(HttpStatus.BAD_REQUEST)
+  public ApiError handleBadRequest(BadRequestException ex, HttpServletRequest request) {
+    return new ApiError(
+        OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS),
+        400,
+        "Bad Request",
+        ex.getMessage(),
+        request.getRequestURI());
+  }
+
   @ExceptionHandler(ResourceNotFoundException.class)
   @ResponseStatus(HttpStatus.NOT_FOUND)
   public ApiError handleNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
