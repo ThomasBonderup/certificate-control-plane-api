@@ -1,21 +1,15 @@
 # Combotto Control Plane API
 
-## Purpose
+## Overview
 
-The control plane managed operational state around the Combotto audit platform.
+Combotto Control Plane API is a Spring Boot service for managing certificate inventory and related operational metadata in the Combotto audit platform.
 
-## First Module
-
-Certificate inventory.
-
-## Owns
+The current scope centers on certificate lifecycle workflows:
 
 - certificate metadata
-- asset bindings
-- ownership
-- renewal status
-- expiry visibility
-- query APIs
+- certificate-to-asset bindings
+- ownership and renewal workflow fields
+- expiring-soon and attention-needed query APIs
 
 ## Does not own
 
@@ -23,18 +17,6 @@ Certificate inventory.
 - TLS handshake evaluation
 - finding generation
 - report logic
-
-## Success for v1
-
-V1 is done when I can:
-
-- register a certificate
-- bind it to an asset
-- search/filter certificates
-- see which ones expire soon
-- update renewal status
-- persist everything reliably
-- cover core flows with tests
 
 ## Technology Stack
 
@@ -46,17 +28,31 @@ V1 is done when I can:
 - Testcontainers
 - Docker Compose
 
-## Local Docker defaults
+## Quick Start
 
-- Docker Compose publishes ports on `127.0.0.1` by default so the stack stays local-only.
-- `kafka-ui` is behind the `tools` profile and is not started unless requested.
-- Compose credentials and host port bindings can be overridden through `.env`.
+1. Copy the local template files and replace every `REPLACE_ME_...` placeholder with local-only values.
+2. Start the supporting services with Docker Compose.
+3. Start the API with Gradle.
+4. Fetch a local Keycloak token and call the API or Swagger UI.
 
 ```bash
 cp .env.example .env
 docker compose up -d postgres kafka keycloak
+./gradlew bootRun
+```
+
+Optional tooling:
+
+```bash
 docker compose --profile tools up -d kafka-ui
 ```
+
+## Local Development Notes
+
+- Docker Compose publishes ports on `127.0.0.1` by default so the stack stays local-only.
+- `kafka-ui` is behind the `tools` profile and is not started unless requested.
+- The committed `.env.example` and Postman environment template are intentionally sanitized. They are templates, not working credentials.
+- Compose credentials and host port bindings can be overridden through `.env`.
 
 ## Local Keycloak
 
@@ -260,11 +256,11 @@ Auth expectations:
 
 ## Postman Setup
 
-The Postman collection reads login details from environment variables instead of storing them in the collection.
+The Postman collection is committed without working credentials. Import the sanitized environment template, duplicate it locally if you want, and fill in your own local-only values before requesting tokens.
 
 1. Import:
    - [certificate-api.postman_collection.json](/Users/thomaswintherbonderup/Development/combotto-control-plane-api/postman/certificate-api.postman_collection.json)
-   - [local-dev.postman_environment.json](/Users/thomaswintherbonderup/Development/combotto-control-plane-api/postman/local-dev.postman_environment.json)
+   - [local-dev.postman_environment.template.json](/Users/thomaswintherbonderup/Development/combotto-control-plane-api/postman/local-dev.postman_environment.template.json)
 2. Select the `Combotto Local Dev` environment in Postman.
 3. Run `Authorization Demo - List Certificates Without Token` to see `401`.
 4. Run `Get Demo Read Token`, then run:
@@ -304,6 +300,10 @@ Expected environment variable names in Postman:
 - `otherWriteUsername`
 - `otherWritePassword`
 - `otherTenantId`
+
+## Security
+
+Please do not open public issues for suspected vulnerabilities. Use the process in [SECURITY.md](/Users/thomaswintherbonderup/Development/combotto-control-plane-api/SECURITY.md) instead.
 
 ## Features
 
