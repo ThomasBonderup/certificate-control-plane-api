@@ -2,7 +2,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus,loggers,env,configprops
+        include: health,info,metrics,prometheus,loggers
 
   endpoint:
     health:
@@ -37,9 +37,9 @@ spring:
         spring.json.value.default.type: com.combotto.controlplane.model.EvidenceEnvelope
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/combotto_control_plane
-    username: combotto
-    password: combotto
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/combotto_control_plane}
+    username: ${SPRING_DATASOURCE_USERNAME:devuser}
+    password: ${SPRING_DATASOURCE_PASSWORD:REPLACE_ME_LOCAL_DB_PASSWORD}
 
   jpa:
     hibernate:
