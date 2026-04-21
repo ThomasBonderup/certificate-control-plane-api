@@ -7,6 +7,7 @@ import java.util.Map;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
@@ -19,6 +20,7 @@ import com.combotto.controlplane.setup.KafkaProducerConfig;
 class KafkaProducerConfigTest {
 
   @Autowired
+  @Qualifier("evidenceProducerFactory")
   ProducerFactory<?, ?> producerFactory;
 
   @Test
