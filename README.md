@@ -1,8 +1,8 @@
-# Combotto Control Plane API
+# Certificate Control Plane API
 
 ## Overview
 
-Combotto Control Plane API is a Spring Boot service for managing certificate inventory and related operational metadata in the Combotto audit platform.
+Certificate Control Plane API is a Spring Boot service for embedded device certificate lifecycle automation. It manages certificate inventory, renewal workflow state, tenant-aware access, and related operational metadata through a REST API.
 
 The current scope centers on certificate lifecycle workflows:
 
