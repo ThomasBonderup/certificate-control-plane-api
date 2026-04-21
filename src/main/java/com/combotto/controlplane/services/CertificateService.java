@@ -1,5 +1,6 @@
 package com.combotto.controlplane.services;
 
+import com.combotto.controlplane.api.CertificateRenewalStatusChangedEvent;
 import com.combotto.controlplane.api.CertificateResponse;
 import com.combotto.controlplane.api.CertificateSummaryResponse;
 import com.combotto.controlplane.api.CreateCertificateRequest;
@@ -33,6 +34,7 @@ public class CertificateService {
   private final CurrentTenantProvider currentTenantProvider;
   private final TenantAccessValidator tenantAccessValidator;
   private final MeterRegistry meterRegistry;
+  private final CertificateEventPublisher certificateEventPublisher;
 
   public CertificateService(
       CertificateRepository certificateRepository,
@@ -40,13 +42,15 @@ public class CertificateService {
       CurrentUserProvider currentUserProvider,
       CurrentTenantProvider currentTenantProvider,
       TenantAccessValidator tenantAccessValidator,
-      MeterRegistry meterRegistry) {
+      MeterRegistry meterRegistry,
+      CertificateEventPublisher certificateEventPublisher) {
     this.certificateRepository = certificateRepository;
     this.certificateMapper = certificateMapper;
     this.currentUserProvider = currentUserProvider;
     this.currentTenantProvider = currentTenantProvider;
     this.tenantAccessValidator = tenantAccessValidator;
     this.meterRegistry = meterRegistry;
+    this.certificateEventPublisher = certificateEventPublisher;
   }
 
   public CertificateResponse create(CreateCertificateRequest request) {
@@ -140,12 +144,39 @@ public class CertificateService {
   public CertificateResponse update(UUID id, UpdateCertificateRequest request) {
     CertificateEntity entity = findCertificate(id);
     OffsetDateTime now = currentTimestamp();
+    RenewalStatus previousRenewalStatus = entity.getRenewalStatus();
 
     applyMetadataUpdates(request, entity);
     applyRenewalWorkflow(request, entity, now);
     stampAuditFields(entity, now);
 
-    return certificateMapper.toResponse(certificateRepository.save(entity));
+    CertificateEntity savedCertificateEntity = certificateRepository.save(entity);
+
+    publishRenewalStatusChangedIfNeeded(savedCertificateEntity, previousRenewalStatus, now);
+
+    return certificateMapper.toResponse(savedCertificateEntity);
+  }
+
+  private void publishRenewalStatusChangedIfNeeded(
+      CertificateEntity saved,
+      RenewalStatus previousRenewalStatus,
+      OffsetDateTime occurredAt) {
+    RenewalStatus currentRenewalStatus = saved.getRenewalStatus();
+    if (saved.getRenewalStatus() == null || currentRenewalStatus == previousRenewalStatus) {
+      return;
+    }
+
+    CertificateRenewalStatusChangedEvent event = new CertificateRenewalStatusChangedEvent(
+        saved.getId(),
+        saved.getTenantId(),
+        previousRenewalStatus != null ? previousRenewalStatus.name() : null,
+        currentRenewalStatus.name(),
+        saved.getBlockedReason(),
+        saved.getRenewalUpdatedAt(),
+        saved.getUpdatedBy(),
+        occurredAt);
+
+    certificateEventPublisher.publishRenewalStatusChanged(event);
   }
 
   private void applyMetadataUpdates(UpdateCertificateRequest request, CertificateEntity entity) {

@@ -12,6 +12,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -31,6 +32,7 @@ import com.combotto.controlplane.api.CreateCertificateRequest;
 import com.combotto.controlplane.model.CertificateStatus;
 import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
+import com.combotto.controlplane.services.CertificateEventPublisher;
 import com.combotto.controlplane.support.CertificateFixtures;
 import static com.combotto.controlplane.support.SecurityTestSupport.authenticated;
 
@@ -57,6 +59,9 @@ class CertificateControllerIntegrationTest {
 
   @Autowired
   private CertificateRepository certificateRepository;
+
+  @MockitoBean
+  private CertificateEventPublisher certificateEventPublisher;
 
   @BeforeEach
   void setUp() {

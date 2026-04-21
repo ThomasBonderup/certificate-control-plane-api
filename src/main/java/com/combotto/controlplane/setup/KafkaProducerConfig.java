@@ -13,13 +13,24 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.core.ProducerFactory;
 import org.springframework.kafka.support.serializer.JacksonJsonSerializer;
 
+import com.combotto.controlplane.api.CertificateRenewalStatusChangedEvent;
 import com.combotto.controlplane.model.EvidenceEnvelope;
 
 @Configuration
 public class KafkaProducerConfig {
   
   @Bean
-  public ProducerFactory<String, EvidenceEnvelope> producerFactory(
+  public ProducerFactory<String, EvidenceEnvelope> evidenceProducerFactory(
+      @Value("${spring.kafka.bootstrap-servers:localhost:9092}") String bootstrapServers) {
+    Map<String, Object> cfg = new HashMap<>();
+    cfg.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+    cfg.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+    cfg.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JacksonJsonSerializer.class);
+    return new DefaultKafkaProducerFactory<>(cfg);
+  }
+
+  @Bean
+  public ProducerFactory<String, CertificateRenewalStatusChangedEvent> certificateRenewalStatusChangedProducerFactory(
       @Value("${spring.kafka.bootstrap-servers:localhost:9092}") String bootstrapServers) {
     Map<String, Object> cfg = new HashMap<>();
     cfg.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
@@ -30,8 +41,14 @@ public class KafkaProducerConfig {
 
   @Bean
   public KafkaTemplate<String, EvidenceEnvelope> kafkaTemplate(
-    ProducerFactory<String, EvidenceEnvelope> producerFactory
+    ProducerFactory<String, EvidenceEnvelope> evidenceProducerFactory
   ) {
-    return new KafkaTemplate<>(producerFactory);
+    return new KafkaTemplate<>(evidenceProducerFactory);
+  }
+
+  @Bean
+  public KafkaTemplate<String, CertificateRenewalStatusChangedEvent> certificateRenewalStatusChangedKafkaTemplate(
+      ProducerFactory<String, CertificateRenewalStatusChangedEvent> certificateRenewalStatusChangedProducerFactory) {
+    return new KafkaTemplate<>(certificateRenewalStatusChangedProducerFactory);
   }
 }
