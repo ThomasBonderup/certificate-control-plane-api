@@ -30,11 +30,12 @@ spring:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
     consumer:
+      group-id: control-plane
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      certificate-renewal-status-history-group-id: control-plane-renewal-history
       properties:
         spring.json.trusted.packages: "com.combotto.controlplane.*"
-        spring.json.value.default.type: com.combotto.controlplane.model.EvidenceEnvelope
 
   datasource:
     url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/combotto_control_plane}
