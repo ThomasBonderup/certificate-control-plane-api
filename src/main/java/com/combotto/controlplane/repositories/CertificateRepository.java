@@ -2,7 +2,6 @@ package com.combotto.controlplane.repositories;
 
 import java.util.UUID;
 import java.time.OffsetDateTime;
-import java.util.List;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -33,27 +32,25 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
       @Param("renewalStatus") RenewalStatus renewalStatus,
       Pageable pageable);
 
-  @Query(
-      value = """
-          select c
-          from CertificateEntity c
-          where c.notAfter is not null
-            and c.notAfter > :now
-            and c.notAfter <= :threshold
-            and (:tenantId is null or c.tenantId = :tenantId)
-            and (:owner is null or c.owner = :owner)
-            and (:renewalStatus is null or c.renewalStatus = :renewalStatus)
-          """,
-      countQuery = """
-          select count(c)
-          from CertificateEntity c
-          where c.notAfter is not null
-            and c.notAfter > :now
-            and c.notAfter <= :threshold
-            and (:tenantId is null or c.tenantId = :tenantId)
-            and (:owner is null or c.owner = :owner)
-            and (:renewalStatus is null or c.renewalStatus = :renewalStatus)
-          """)
+  @Query(value = """
+      select c
+      from CertificateEntity c
+      where c.notAfter is not null
+        and c.notAfter > :now
+        and c.notAfter <= :threshold
+        and (:tenantId is null or c.tenantId = :tenantId)
+        and (:owner is null or c.owner = :owner)
+        and (:renewalStatus is null or c.renewalStatus = :renewalStatus)
+      """, countQuery = """
+      select count(c)
+      from CertificateEntity c
+      where c.notAfter is not null
+        and c.notAfter > :now
+        and c.notAfter <= :threshold
+        and (:tenantId is null or c.tenantId = :tenantId)
+        and (:owner is null or c.owner = :owner)
+        and (:renewalStatus is null or c.renewalStatus = :renewalStatus)
+      """)
   Page<CertificateEntity> findExpiringSoonByFilters(
       @Param("now") OffsetDateTime now,
       @Param("threshold") OffsetDateTime threshold,
@@ -62,55 +59,53 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
       @Param("renewalStatus") RenewalStatus renewalStatus,
       Pageable pageable);
 
-  @Query(
-      value = """
-          select c
-          from CertificateEntity c
-          where
-            c.tenantId = :tenantId
-            and (
-              (c.notAfter is not null and c.notAfter <= :now)
-            or
-            (c.renewalStatus = :renewalBlocked)
-            or
-            (
-              c.notAfter is not null
-              and c.notAfter > :now
-              and c.notAfter <= :threshold
-              and (
-                c.owner is null
-                or trim(c.owner) = ''
-                or c.renewalStatus = :renewalNotStarted
-                or c.renewalStatus = :renewalPlanned
-                or c.renewalStatus = :renewalInProgress
-              )
-            )
+  @Query(value = """
+      select c
+      from CertificateEntity c
+      where
+        c.tenantId = :tenantId
+        and (
+          (c.notAfter is not null and c.notAfter <= :now)
+        or
+        (c.renewalStatus = :renewalBlocked)
+        or
+        (
+          c.notAfter is not null
+          and c.notAfter > :now
+          and c.notAfter <= :threshold
+          and (
+            c.owner is null
+            or trim(c.owner) = ''
+            or c.renewalStatus = :renewalNotStarted
+            or c.renewalStatus = :renewalPlanned
+            or c.renewalStatus = :renewalInProgress
           )
-          """,
-      countQuery = """
-          select count(c)
-          from CertificateEntity c
-          where
-            c.tenantId = :tenantId
-            and (
-              (c.notAfter is not null and c.notAfter <= :now)
-            or
-            (c.renewalStatus = :renewalBlocked)
-            or
-            (
-              c.notAfter is not null
-              and c.notAfter > :now
-              and c.notAfter <= :threshold
-              and (
-                c.owner is null
-                or trim(c.owner) = ''
-                or c.renewalStatus = :renewalNotStarted
-                or c.renewalStatus = :renewalPlanned
-                or c.renewalStatus = :renewalInProgress
-              )
-            )
+        )
+      )
+      """, countQuery = """
+      select count(c)
+      from CertificateEntity c
+      where
+        c.tenantId = :tenantId
+        and (
+          (c.notAfter is not null and c.notAfter <= :now)
+        or
+        (c.renewalStatus = :renewalBlocked)
+        or
+        (
+          c.notAfter is not null
+          and c.notAfter > :now
+          and c.notAfter <= :threshold
+          and (
+            c.owner is null
+            or trim(c.owner) = ''
+            or c.renewalStatus = :renewalNotStarted
+            or c.renewalStatus = :renewalPlanned
+            or c.renewalStatus = :renewalInProgress
           )
-          """)
+        )
+      )
+      """)
   Page<CertificateEntity> findAttentionNeeded(
       @Param("now") OffsetDateTime now,
       @Param("threshold") OffsetDateTime threshold,

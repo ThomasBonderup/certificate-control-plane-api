@@ -13,8 +13,11 @@ import com.combotto.controlplane.common.ResourceNotFoundException;
 import com.combotto.controlplane.common.TenantAccessValidator;
 import com.combotto.controlplane.model.CertificateEntity;
 import com.combotto.controlplane.model.CertificateStatus;
+import com.combotto.controlplane.model.OutboxEventEntity;
+import com.combotto.controlplane.model.OutboxStatus;
 import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
+import com.combotto.controlplane.repositories.OutboxEventRepository;
 
 import io.micrometer.core.instrument.MeterRegistry;
 
@@ -22,6 +25,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -35,7 +39,7 @@ public class CertificateService {
   private final CurrentTenantProvider currentTenantProvider;
   private final TenantAccessValidator tenantAccessValidator;
   private final MeterRegistry meterRegistry;
-  private final CertificateEventPublisher certificateEventPublisher;
+  private final OutboxEventWriter outboxEventWriter;
 
   public CertificateService(
       CertificateRepository certificateRepository,
@@ -44,14 +48,14 @@ public class CertificateService {
       CurrentTenantProvider currentTenantProvider,
       TenantAccessValidator tenantAccessValidator,
       MeterRegistry meterRegistry,
-      CertificateEventPublisher certificateEventPublisher) {
+      OutboxEventWriter outboxEventWriter) {
     this.certificateRepository = certificateRepository;
     this.certificateMapper = certificateMapper;
     this.currentUserProvider = currentUserProvider;
     this.currentTenantProvider = currentTenantProvider;
     this.tenantAccessValidator = tenantAccessValidator;
     this.meterRegistry = meterRegistry;
-    this.certificateEventPublisher = certificateEventPublisher;
+    this.outboxEventWriter = outboxEventWriter;
   }
 
   public CertificateResponse create(CreateCertificateRequest request) {
@@ -142,6 +146,7 @@ public class CertificateService {
     return certificateMapper.toResponse(entity);
   }
 
+  @Transactional
   public CertificateResponse update(UUID id, UpdateCertificateRequest request) {
     CertificateEntity entity = findCertificate(id);
     OffsetDateTime now = currentTimestamp();
@@ -153,16 +158,17 @@ public class CertificateService {
 
     CertificateEntity savedCertificateEntity = certificateRepository.save(entity);
 
-    publishRenewalStatusChangedIfNeeded(savedCertificateEntity, previousRenewalStatus, now);
+    publishRenewalStatusChangedOutboxIfNeeded(savedCertificateEntity, previousRenewalStatus, now);
 
     return certificateMapper.toResponse(savedCertificateEntity);
   }
 
-  private void publishRenewalStatusChangedIfNeeded(
+  private void publishRenewalStatusChangedOutboxIfNeeded(
       CertificateEntity saved,
       RenewalStatus previousRenewalStatus,
       OffsetDateTime occurredAt) {
     RenewalStatus currentRenewalStatus = saved.getRenewalStatus();
+
     if (saved.getRenewalStatus() == null || currentRenewalStatus == previousRenewalStatus) {
       return;
     }
@@ -177,7 +183,7 @@ public class CertificateService {
         saved.getUpdatedBy(),
         occurredAt);
 
-    certificateEventPublisher.publishRenewalStatusChanged(event);
+    outboxEventWriter.appendRenewalStatusChanged(event);
   }
 
   private void applyMetadataUpdates(UpdateCertificateRequest request, CertificateEntity entity) {
