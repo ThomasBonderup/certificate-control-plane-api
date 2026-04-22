@@ -69,6 +69,8 @@ Keycloak is configured for local development on `http://localhost:9000` with a r
 - Demo write client secret: `${KEYCLOAK_DEMO_WRITE_CLIENT_SECRET}`
 - Demo write username: `${KEYCLOAK_DEMO_WRITE_USERNAME}`
 - Demo write password: `${KEYCLOAK_DEMO_WRITE_PASSWORD}`
+- Demo write-no-admin username: `${KEYCLOAK_DEMO_WRITE_NO_ADMIN_USERNAME}`
+- Demo write-no-admin password: `${KEYCLOAK_DEMO_WRITE_NO_ADMIN_PASSWORD}`
 - Demo tenant id: `${KEYCLOAK_DEMO_TENANT_ID}`
 - Other read username: `${KEYCLOAK_OTHER_READ_USERNAME}`
 - Other read password: `${KEYCLOAK_OTHER_READ_PASSWORD}`
@@ -79,6 +81,10 @@ Keycloak is configured for local development on `http://localhost:9000` with a r
 The realm file is now a template at [combotto-realm.template.json](/Users/thomaswintherbonderup/Development/combotto-control-plane-api/keycloak/import/combotto-realm.template.json). `docker compose` passes the Keycloak values into the container, a small startup script renders the final realm JSON, and then Keycloak imports that rendered file. This is necessary because Keycloak does not interpolate environment variables directly inside realm import JSON.
 
 Each local Keycloak user has a `tenant_id` user attribute. Keycloak maps that attribute into the JWT as the `tenantId` claim, and the API uses that claim as the tenant boundary for certificates, assets, and bindings.
+
+The local realm seed assigns the `ADMIN` realm role to `${KEYCLOAK_DEMO_WRITE_USERNAME}` and `${KEYCLOAK_OTHER_WRITE_USERNAME}`. It also creates `${KEYCLOAK_DEMO_WRITE_NO_ADMIN_USERNAME}` as a demo-tenant principal that still gets write scope from the write client but has no `ADMIN` role, so you can manually verify delete enforcement.
+
+Local-dev auth note: the imported Keycloak realm is intentionally optimized for local testing, not as a production template. In particular, the seeded users, direct password grant flow, and `fullScopeAllowed: true` on the local write client are convenience choices so admin roles are emitted in local JWTs and method-level authorization can be exercised easily. Treat those settings as local-only and prefer tighter role scope mappings for non-local environments.
 
 Get a local demo-tenant read token:
 
@@ -252,6 +258,7 @@ Auth expectations:
 - `/v3/api-docs`, `/swagger-ui.html`, and `/swagger-ui/**` are public in local development
 - `GET /api/**` requires `controlplane.read`
 - `POST`, `PATCH`, and `DELETE` on `/api/**` require `controlplane.write`
+- `DELETE /api/certificates/{id}` and `DELETE /api/assets/{id}` also require the `ADMIN` role at the service layer
 - Create requests that include `tenantId` must still match the authenticated token tenant
 
 ## Postman Setup
@@ -272,8 +279,15 @@ The Postman collection is committed without working credentials. Import the sani
 5. Run `Get Demo Write Token`, then run:
    - `Create Certificate` and expect `201`
    - `Authorization Demo - Write Token Cannot List Certificates` and expect `403`
+   - `Delete Certificate` still requires an admin role, even with write scope
    - `Observability / Metrics` and expect `403` if the write token is still active
-6. Run `Get Other Read Token` or `Get Other Write Token` when you want to switch the collection to the `other-tenant` identity. The token requests store the decoded `tenantId` claim in `accessTokenTenantId`.
+6. Run `Get Demo Write Token (No Admin)`, then run:
+   - `Delete Certificate` and expect `403`
+   - inspect `accessTokenRoles` in the collection variables or Postman console and confirm `ADMIN` is absent
+7. Run `Get Demo Admin Token`, then run:
+   - `Delete Certificate` and expect `204`
+   - inspect `accessTokenRoles` in the collection variables or Postman console to confirm `ADMIN` is present on the write user token
+8. Run `Get Other Read Token`, `Get Other Write Token`, or `Get Other Admin Token` when you want to switch the collection to the `other-tenant` identity. The token requests store the decoded `tenantId` claim in `accessTokenTenantId`.
 
 The collection also includes:
 
@@ -294,6 +308,8 @@ Expected environment variable names in Postman:
 - `demoWriteClientSecret`
 - `demoWriteUsername`
 - `demoWritePassword`
+- `demoWriteNoAdminUsername`
+- `demoWriteNoAdminPassword`
 - `demoTenantId`
 - `otherReadUsername`
 - `otherReadPassword`
