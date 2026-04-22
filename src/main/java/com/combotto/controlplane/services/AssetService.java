@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import com.combotto.controlplane.api.AssetResponse;
@@ -95,6 +96,7 @@ public class AssetService {
     return toResponse(assetRepository.save(entity));
   }
 
+  @PreAuthorize("hasRole('ADMIN')")
   public void delete(UUID id) {
     if (!assetRepository.existsByIdAndTenantId(id, currentTenantProvider.getRequiredTenantId())) {
       throw new ResourceNotFoundException("Asset not found: " + id);

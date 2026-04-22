@@ -34,6 +34,7 @@ import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
 import com.combotto.controlplane.services.CertificateEventPublisher;
 import com.combotto.controlplane.support.CertificateFixtures;
+import static com.combotto.controlplane.support.SecurityTestSupport.adminAuthenticated;
 import static com.combotto.controlplane.support.SecurityTestSupport.authenticated;
 
 @Testcontainers(disabledWithoutDocker = true)
@@ -1310,10 +1311,25 @@ class CertificateControllerIntegrationTest {
     UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
 
     mockMvc.perform(delete("/api/certificates/{id}", id)
-        .with(authenticated()))
+        .with(adminAuthenticated()))
         .andExpect(status().isNoContent());
 
     assertThat(certificateRepository.existsById(id)).isFalse();
+  }
+
+  @Test
+  void delete_returns403_whenCallerLacksAdminRole() throws Exception {
+    UUID id = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
+
+    mockMvc.perform(delete("/api/certificates/{id}", id)
+        .with(authenticated()))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.status").value(403))
+        .andExpect(jsonPath("$.error").value("Forbidden"))
+        .andExpect(jsonPath("$.message").value("Access denied"))
+        .andExpect(jsonPath("$.path").value("/api/certificates/" + id));
+
+    assertThat(certificateRepository.existsById(id)).isTrue();
   }
 
   @Test

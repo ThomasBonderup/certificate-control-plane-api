@@ -30,6 +30,7 @@ import com.combotto.controlplane.repositories.CertificateRepository;
 import com.combotto.controlplane.support.AssetFixtures;
 import com.combotto.controlplane.support.CertificateBindingFixtures;
 import com.combotto.controlplane.support.CertificateFixtures;
+import static com.combotto.controlplane.support.SecurityTestSupport.adminAuthenticated;
 import static com.combotto.controlplane.support.SecurityTestSupport.authenticated;
 
 import tools.jackson.databind.JsonNode;
@@ -298,10 +299,25 @@ class AssetControllerIntegrationTest {
     UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
 
     mockMvc.perform(delete("/api/assets/{id}", assetId)
-        .with(authenticated()))
+        .with(adminAuthenticated()))
         .andExpect(status().isNoContent());
 
     assertThat(assetRepository.existsById(assetId)).isFalse();
+  }
+
+  @Test
+  void delete_returns403_whenCallerLacksAdminRole() throws Exception {
+    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
+
+    mockMvc.perform(delete("/api/assets/{id}", assetId)
+        .with(authenticated()))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.status").value(403))
+        .andExpect(jsonPath("$.error").value("Forbidden"))
+        .andExpect(jsonPath("$.message").value("Access denied"))
+        .andExpect(jsonPath("$.path").value("/api/assets/" + assetId));
+
+    assertThat(assetRepository.existsById(assetId)).isTrue();
   }
 
   @Test
@@ -309,7 +325,7 @@ class AssetControllerIntegrationTest {
     UUID missingAssetId = UUID.randomUUID();
 
     mockMvc.perform(delete("/api/assets/{id}", missingAssetId)
-        .with(authenticated()))
+        .with(adminAuthenticated()))
         .andExpect(status().isNotFound())
         .andExpect(jsonPath("$.status").value(404))
         .andExpect(jsonPath("$.error").value("Not Found"))

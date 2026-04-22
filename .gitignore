@@ -47,6 +47,7 @@ out/
 application-local.yml
 application-local.properties
 postman/*.postman_environment.json
+postman/local-dev.postman_environment.json
 
 # Beads / local issue state
 .beads/

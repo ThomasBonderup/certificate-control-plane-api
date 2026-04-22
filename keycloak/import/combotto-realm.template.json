@@ -72,6 +72,38 @@
         "controlplane.read",
         "tenant-context"
       ],
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false",
+            "introspection.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "client roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false",
+            "introspection.token.claim": "true",
+            "claim.name": "resource_access.${client_id}.roles",
+            "jsonType.label": "String"
+          }
+        }
+      ],
       "redirectUris": [],
       "webOrigins": []
     },
@@ -86,15 +118,55 @@
       "directAccessGrantsEnabled": true,
       "standardFlowEnabled": false,
       "serviceAccountsEnabled": false,
-      "fullScopeAllowed": false,
+      "fullScopeAllowed": true,
       "defaultClientScopes": [
         "controlplane.write",
         "tenant-context"
+      ],
+      "protocolMappers": [
+        {
+          "name": "realm roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false",
+            "introspection.token.claim": "true",
+            "claim.name": "realm_access.roles",
+            "jsonType.label": "String"
+          }
+        },
+        {
+          "name": "client roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-client-role-mapper",
+          "consentRequired": false,
+          "config": {
+            "multivalued": "true",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "userinfo.token.claim": "false",
+            "introspection.token.claim": "true",
+            "claim.name": "resource_access.${client_id}.roles",
+            "jsonType.label": "String"
+          }
+        }
       ],
       "redirectUris": [],
       "webOrigins": []
     }
   ],
+  "roles": {
+    "realm": [
+      {
+        "name": "ADMIN",
+        "description": "Administrative access for sensitive control plane operations"
+      }
+    ]
+  },
   "users": [
     {
       "username": "${KEYCLOAK_DEMO_READ_USERNAME}",
@@ -135,6 +207,30 @@
         {
           "type": "password",
           "value": "${KEYCLOAK_DEMO_WRITE_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "default-roles-combotto",
+        "ADMIN"
+      ]
+    },
+    {
+      "username": "${KEYCLOAK_DEMO_WRITE_NO_ADMIN_USERNAME}",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Demo",
+      "lastName": "Writer No Admin",
+      "email": "${KEYCLOAK_DEMO_WRITE_NO_ADMIN_EMAIL}",
+      "attributes": {
+        "tenant_id": [
+          "${KEYCLOAK_DEMO_TENANT_ID}"
+        ]
+      },
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${KEYCLOAK_DEMO_WRITE_NO_ADMIN_PASSWORD}",
           "temporary": false
         }
       ],
@@ -185,7 +281,8 @@
         }
       ],
       "realmRoles": [
-        "default-roles-combotto"
+        "default-roles-combotto",
+        "ADMIN"
       ]
     }
   ]

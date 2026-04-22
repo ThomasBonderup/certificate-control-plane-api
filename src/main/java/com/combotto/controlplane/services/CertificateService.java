@@ -20,6 +20,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.time.OffsetDateTime;
@@ -248,6 +249,7 @@ public class CertificateService {
     entity.setUpdatedBy(currentUserProvider.getCurrentUserId());
   }
 
+  @PreAuthorize("hasRole('ADMIN')")
   public void delete(UUID id) {
     if (!certificateRepository.existsByIdAndTenantId(id, currentTenantProvider.getRequiredTenantId())) {
       throw new ResourceNotFoundException("Certificate not found: " + id);

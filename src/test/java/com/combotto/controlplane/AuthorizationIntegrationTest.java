@@ -1,10 +1,13 @@
 package com.combotto.controlplane;
 
 import static com.combotto.controlplane.support.SecurityTestSupport.readOnly;
+import static com.combotto.controlplane.support.SecurityTestSupport.adminAuthenticated;
 import static com.combotto.controlplane.support.SecurityTestSupport.authenticatedWithoutTenant;
 import static com.combotto.controlplane.support.SecurityTestSupport.writeOnly;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -86,10 +89,51 @@ class AuthorizationIntegrationTest {
   }
 
   @Test
+  void writeOnlyScope_cannotDeleteCertificate_withoutAdminRole() throws Exception {
+    String body = mockMvc.perform(post("/api/certificates")
+        .with(writeOnly())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(validCreateCertificateJson()))
+        .andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    String certificateId = objectMapper.readTree(body).get("id").asText();
+
+    mockMvc.perform(delete("/api/certificates/{id}", certificateId)
+        .with(writeOnly()))
+        .andExpect(status().isForbidden());
+  }
+
+  @Test
+  void adminRole_withWriteScope_canDeleteCertificate() throws Exception {
+    String body = mockMvc.perform(post("/api/certificates")
+        .with(adminAuthenticated())
+        .contentType(MediaType.APPLICATION_JSON)
+        .content(validCreateCertificateJson()))
+        .andExpect(status().isCreated())
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    String certificateId = objectMapper.readTree(body).get("id").asText();
+
+    mockMvc.perform(delete("/api/certificates/{id}", certificateId)
+        .with(adminAuthenticated()))
+        .andExpect(status().isNoContent());
+  }
+
+  @Test
   void authenticatedRequest_withoutTenantClaim_isUnauthorized() throws Exception {
     mockMvc.perform(get("/api/certificates")
         .with(authenticatedWithoutTenant()))
-        .andExpect(status().isUnauthorized());
+        .andExpect(status().isUnauthorized())
+        .andExpect(status().reason(org.hamcrest.Matchers.nullValue()))
+        .andExpect(jsonPath("$.status").value(401))
+        .andExpect(jsonPath("$.error").value("Unauthorized"))
+        .andExpect(jsonPath("$.message").value("Authentication is required to access this resource"))
+        .andExpect(jsonPath("$.path").value("/api/certificates"));
   }
 
   @Test
