@@ -319,6 +319,22 @@ Expected environment variable names in Postman:
 
 ## Security
 
+### Request security flow
+
+The API is configured as a stateless Spring Security OAuth2 resource server. Requests do not create server-side sessions; every protected call must carry a valid Keycloak-issued JWT in the `Authorization: Bearer ...` header.
+
+![Security and JWT request flow](docs/security-jwt-flow.svg)
+
+Key points in the code:
+
+- `SecurityConfig` allows public health/docs endpoints and protects `/api/**` plus metrics by HTTP method and scope.
+- `GET /api/**` and protected actuator reads require `SCOPE_controlplane.read`.
+- `POST`, `PATCH`, and `DELETE /api/**` require `SCOPE_controlplane.write`.
+- `jwtAuthenticationConverter()` keeps Spring's `SCOPE_...` authorities and also maps JWT roles from `roles`, `realm_access.roles`, and `resource_access.*.roles` into `ROLE_...` authorities.
+- `@EnableMethodSecurity` activates service-level checks such as `@PreAuthorize("hasRole('ADMIN')")` on deletes.
+- `CurrentTenantProvider` reads the authenticated JWT from `SecurityContextHolder` and requires the `tenantId` claim.
+- Tenant-scoped services query repositories with the authenticated tenant id, so cross-tenant lookups are hidden as `404`.
+
 Please do not open public issues for suspected vulnerabilities. Use the process in [SECURITY.md](/Users/thomaswintherbonderup/Development/combotto-control-plane-api/SECURITY.md) instead.
 
 ## Features
