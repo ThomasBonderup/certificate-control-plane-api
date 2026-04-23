@@ -13,11 +13,8 @@ import com.combotto.controlplane.common.ResourceNotFoundException;
 import com.combotto.controlplane.common.TenantAccessValidator;
 import com.combotto.controlplane.model.CertificateEntity;
 import com.combotto.controlplane.model.CertificateStatus;
-import com.combotto.controlplane.model.OutboxEventEntity;
-import com.combotto.controlplane.model.OutboxStatus;
 import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
-import com.combotto.controlplane.repositories.OutboxEventRepository;
 
 import io.micrometer.core.instrument.MeterRegistry;
 

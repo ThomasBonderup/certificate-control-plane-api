@@ -4,6 +4,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -34,6 +35,17 @@ public class GlobalExceptionHandler {
         404,
         "Not Found",
         ex.getMessage(),
+        request.getRequestURI());
+  }
+
+  @ExceptionHandler(AccessDeniedException.class)
+  @ResponseStatus(HttpStatus.FORBIDDEN)
+  public ApiError handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+    return new ApiError(
+        OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS),
+        403,
+        "Forbidden",
+        "Access denied",
         request.getRequestURI());
   }
 
