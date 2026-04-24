@@ -149,47 +149,47 @@
   <text class="label" x="184" y="842" text-anchor="middle">Tenant provider</text>
   <text class="body" x="184" y="866" text-anchor="middle">reads tenantId from</text>
   <text class="body" x="184" y="886" text-anchor="middle">SecurityContext JWT</text>
-  <rect class="deny" x="304" y="814" width="148" height="96"/>
-  <text class="label" x="378" y="846" text-anchor="middle">No tenantId</text>
-  <text class="body" x="378" y="870" text-anchor="middle">authentication is</text>
-  <text class="body" x="378" y="890" text-anchor="middle">insufficient</text>
-  <rect class="badge401" x="320" y="924" width="116" height="28" rx="14"/>
-  <text class="badgeText" x="378" y="943" text-anchor="middle">401 no tenant</text>
+  <rect class="deny" x="304" y="814" width="136" height="96"/>
+  <text class="label" x="372" y="846" text-anchor="middle">No tenantId</text>
+  <text class="body" x="372" y="870" text-anchor="middle">authentication is</text>
+  <text class="body" x="372" y="890" text-anchor="middle">insufficient</text>
+  <rect class="badge401" x="314" y="924" width="116" height="28" rx="14"/>
+  <text class="badgeText" x="372" y="943" text-anchor="middle">401 no tenant</text>
 
-  <rect class="section" x="568" y="724" width="404" height="238"/>
-  <text class="sectionTitle" x="596" y="758">8. Tenant enforcement</text>
-  <text class="sectionHint" x="596" y="782">The authenticated tenant becomes</text>
-  <text class="sectionHint" x="596" y="800">the boundary for tenant-owned data.</text>
-  <rect class="tenant" x="596" y="814" width="166" height="96"/>
-  <text class="label" x="679" y="842" text-anchor="middle">Tenant filters</text>
-  <text class="body" x="679" y="866" text-anchor="middle">request tenantId must</text>
-  <text class="body" x="679" y="886" text-anchor="middle">match JWT tenantId</text>
-  <rect class="data" x="790" y="814" width="154" height="96"/>
-  <text class="label" x="867" y="842" text-anchor="middle">Repository</text>
-  <text class="body" x="867" y="866" text-anchor="middle">query by id and</text>
-  <text class="body" x="867" y="886" text-anchor="middle">JWT tenantId</text>
-  <rect class="badge400" x="609" y="924" width="140" height="28" rx="14"/>
-  <text class="badgeText" x="679" y="943" text-anchor="middle">400 mismatch</text>
-  <rect class="badge404" x="807" y="924" width="120" height="28" rx="14"/>
-  <text class="badgeText" x="867" y="943" text-anchor="middle">404 hidden</text>
+  <rect class="section" x="512" y="724" width="404" height="238"/>
+  <text class="sectionTitle" x="540" y="758">8. Tenant enforcement</text>
+  <text class="sectionHint" x="540" y="782">The authenticated tenant becomes</text>
+  <text class="sectionHint" x="540" y="800">the boundary for tenant-owned data.</text>
+  <rect class="tenant" x="540" y="814" width="172" height="96"/>
+  <text class="label" x="626" y="842" text-anchor="middle">Tenant filters</text>
+  <text class="body" x="626" y="866" text-anchor="middle">request tenantId must</text>
+  <text class="body" x="626" y="886" text-anchor="middle">match JWT tenantId</text>
+  <rect class="data" x="740" y="814" width="160" height="96"/>
+  <text class="label" x="820" y="842" text-anchor="middle">Repository</text>
+  <text class="body" x="820" y="866" text-anchor="middle">query by id and</text>
+  <text class="body" x="820" y="886" text-anchor="middle">JWT tenantId</text>
+  <rect class="badge400" x="556" y="924" width="140" height="28" rx="14"/>
+  <text class="badgeText" x="626" y="943" text-anchor="middle">400 mismatch</text>
+  <rect class="badge404" x="760" y="924" width="120" height="28" rx="14"/>
+  <text class="badgeText" x="820" y="943" text-anchor="middle">404 hidden</text>
 
-  <rect class="section" x="1072" y="724" width="304" height="238"/>
-  <text class="sectionTitle" x="1100" y="758">9. Response contract</text>
-  <text class="sectionHint" x="1100" y="782">The response code shows which</text>
-  <text class="sectionHint" x="1100" y="800">boundary rejected the request.</text>
-  <rect class="success" x="1100" y="814" width="116" height="96"/>
-  <text class="label" x="1158" y="842" text-anchor="middle">Allowed</text>
-  <text class="body" x="1158" y="866" text-anchor="middle">controller</text>
-  <text class="body" x="1158" y="886" text-anchor="middle">returns DTO</text>
-  <rect class="card" x="1236" y="814" width="112" height="96"/>
-  <text class="label" x="1292" y="842" text-anchor="middle">Denied</text>
-  <text class="body" x="1292" y="866" text-anchor="middle">ApiError</text>
-  <text class="body" x="1292" y="886" text-anchor="middle">status + path</text>
-  <rect class="badge200" x="1104" y="924" width="108" height="28" rx="14"/>
-  <text class="badgeText" x="1158" y="943" text-anchor="middle">2xx</text>
+  <rect class="section" x="960" y="724" width="416" height="238"/>
+  <text class="sectionTitle" x="988" y="758">9. Response contract</text>
+  <text class="sectionHint" x="988" y="782">The response code shows which</text>
+  <text class="sectionHint" x="988" y="800">boundary rejected the request.</text>
+  <rect class="success" x="1000" y="814" width="156" height="96"/>
+  <text class="label" x="1078" y="842" text-anchor="middle">Allowed</text>
+  <text class="body" x="1078" y="866" text-anchor="middle">controller</text>
+  <text class="body" x="1078" y="886" text-anchor="middle">returns DTO</text>
+  <rect class="card" x="1192" y="814" width="156" height="96"/>
+  <text class="label" x="1270" y="842" text-anchor="middle">Denied</text>
+  <text class="body" x="1270" y="866" text-anchor="middle">ApiError</text>
+  <text class="body" x="1270" y="886" text-anchor="middle">status + path</text>
+  <rect class="badge200" x="1024" y="924" width="108" height="28" rx="14"/>
+  <text class="badgeText" x="1078" y="943" text-anchor="middle">2xx</text>
 
-  <path class="arrow" d="M468 862 H568"/>
-  <path class="arrow" d="M972 862 H1072"/>
+  <path class="arrow" d="M440 862 H540"/>
+  <path class="arrow" d="M900 862 H1000"/>
 
   <rect x="64" y="986" width="1352" height="2" fill="#d7dee8"/>
   <text class="small" x="64" y="1008">Code anchors: SecurityConfig, jwtAuthenticationConverter(), JsonSecurityErrorWriter, CurrentTenantProvider,</text>
