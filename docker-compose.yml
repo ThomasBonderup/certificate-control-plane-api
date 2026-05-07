@@ -1,23 +1,4 @@
 services:
-  kafka:
-    image: apache/kafka-native:latest
-    container_name: kafka
-    ports:
-      - "127.0.0.1:${KAFKA_HOST_PORT:-9092}:9092"   # host apps connect here (Spring Boot)
-    environment:
-      # Two listeners: HOST for localhost apps, DOCKER for containers (kafka-ui)
-      KAFKA_LISTENERS: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://kafka:9093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,HOST:PLAINTEXT
-
-      # KRaft single-node settings
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9091
-      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-
   control-plane-api:
     build:
       context: .
@@ -33,23 +14,11 @@ services:
       AUTH_ISSUER_URI: http://localhost:${KEYCLOAK_HOST_PORT:-9000}/realms/combotto
       AUTH_JWK_SET_URI: http://keycloak:8080/realms/combotto/protocol/openid-connect/certs
     depends_on:
-      - kafka
       - postgres
       - keycloak
-
-  kafka-ui:
-    image: kafbat/kafka-ui:main
-    container_name: kafka-ui
-    profiles:
-      - tools
-    ports:
-      - "127.0.0.1:${KAFKA_UI_HOST_PORT:-8081}:8081"
-    environment:
-      DYNAMIC_CONFIG_ENABLED: "true"
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
-    depends_on:
-      - kafka
+    networks:
+      - default
+      - combotto-platform
 
   postgres:
     image: postgres:16
@@ -102,3 +71,8 @@ services:
 
 volumes:
   combotto_control_plane_postgres:
+
+networks:
+  combotto-platform:
+    external: true
+    name: combotto-platform

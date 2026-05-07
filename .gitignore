@@ -44,7 +44,6 @@ out/
 
 # Env / local config
 .env
-docker-compose.lan.yml
 application-local.yml
 application-local.properties
 postman/*.postman_environment.json
