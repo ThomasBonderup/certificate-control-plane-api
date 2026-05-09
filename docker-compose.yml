@@ -1,67 +1,25 @@
 services:
-  kafka:
-    image: apache/kafka-native:latest
-    container_name: kafka
-    ports:
-      - "127.0.0.1:${KAFKA_HOST_PORT:-9092}:9092"   # host apps connect here (Spring Boot)
-    environment:
-      # Two listeners: HOST for localhost apps, DOCKER for containers (kafka-ui)
-      KAFKA_LISTENERS: CONTROLLER://localhost:9091,HOST://0.0.0.0:9092,DOCKER://0.0.0.0:9093
-      KAFKA_ADVERTISED_LISTENERS: HOST://localhost:9092,DOCKER://kafka:9093
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,DOCKER:PLAINTEXT,HOST:PLAINTEXT
-
-      # KRaft single-node settings
-      KAFKA_NODE_ID: 1
-      KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:9091
-      KAFKA_INTER_BROKER_LISTENER_NAME: DOCKER
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-
   control-plane-api:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: control-plane-api
     ports:
-      - "127.0.0.1:${CONTROL_PLANE_PORT:-8080}:8080"
+      - "${CONTROL_PLANE_PORT:-8082}:8080"
     environment:
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9093
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-combotto_control_plane}
-      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-devuser}
-      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-REPLACE_ME_LOCAL_DB_PASSWORD}
+      SERVER_PORT: 8080
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:-host.docker.internal:9092}
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:postgresql://host.docker.internal:5433/combotto}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-combotto}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-combotto}
+      SPRING_FLYWAY_DEFAULT_SCHEMA: control_plane
+      SPRING_FLYWAY_SCHEMAS: control_plane
+      SPRING_FLYWAY_CREATE_SCHEMAS: "true"
+      SPRING_JPA_PROPERTIES_HIBERNATE_DEFAULT_SCHEMA: control_plane
       AUTH_ISSUER_URI: http://localhost:${KEYCLOAK_HOST_PORT:-9000}/realms/combotto
       AUTH_JWK_SET_URI: http://keycloak:8080/realms/combotto/protocol/openid-connect/certs
     depends_on:
-      - kafka
-      - postgres
       - keycloak
-
-  kafka-ui:
-    image: kafbat/kafka-ui:main
-    container_name: kafka-ui
-    profiles:
-      - tools
-    ports:
-      - "127.0.0.1:${KAFKA_UI_HOST_PORT:-8081}:8081"
-    environment:
-      DYNAMIC_CONFIG_ENABLED: "true"
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9093
-    depends_on:
-      - kafka
-
-  postgres:
-    image: postgres:16
-    container_name: combotto-control-plane-postgres
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-combotto_control_plane}
-      POSTGRES_USER: ${POSTGRES_USER:-devuser}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-REPLACE_ME_LOCAL_DB_PASSWORD}
-    ports:
-      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
-    volumes:
-      - combotto_control_plane_postgres:/var/lib/postgresql/data
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.6.1
@@ -71,8 +29,12 @@ services:
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-REPLACE_ME_LOCAL_KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: ${KEYCLOAK_HOSTNAME:-http://localhost:${KEYCLOAK_HOST_PORT:-9000}}
+      KC_HOSTNAME_STRICT: "false"
       KEYCLOAK_DEMO_READ_CLIENT_ID: ${KEYCLOAK_DEMO_READ_CLIENT_ID:-control-plane-demo-read-cli}
       KEYCLOAK_DEMO_READ_CLIENT_SECRET: ${KEYCLOAK_DEMO_READ_CLIENT_SECRET:-REPLACE_ME_LOCAL_DEMO_READ_CLIENT_SECRET}
+      KEYCLOAK_PROMETHEUS_CLIENT_ID: ${KEYCLOAK_PROMETHEUS_CLIENT_ID:-control-plane-prometheus}
+      KEYCLOAK_PROMETHEUS_CLIENT_SECRET: ${KEYCLOAK_PROMETHEUS_CLIENT_SECRET:-REPLACE_ME_LOCAL_PROMETHEUS_CLIENT_SECRET}
       KEYCLOAK_DEMO_WRITE_CLIENT_ID: ${KEYCLOAK_DEMO_WRITE_CLIENT_ID:-control-plane-demo-write-cli}
       KEYCLOAK_DEMO_WRITE_CLIENT_SECRET: ${KEYCLOAK_DEMO_WRITE_CLIENT_SECRET:-REPLACE_ME_LOCAL_DEMO_WRITE_CLIENT_SECRET}
       KEYCLOAK_DEMO_READ_USERNAME: ${KEYCLOAK_DEMO_READ_USERNAME:-local-demo-reader}
@@ -99,6 +61,3 @@ services:
       - -c
     command:
       - sh /opt/keycloak/data/local-config/scripts/render-realm.sh && exec /opt/keycloak/bin/kc.sh start-dev --import-realm
-
-volumes:
-  combotto_control_plane_postgres:

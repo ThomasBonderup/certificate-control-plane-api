@@ -20,12 +20,12 @@ public final class CertificateBindingFixtures {
   private CertificateBindingFixtures() {
   }
 
-  public static CreateCertificateBindingRequest validCreateRequest(UUID assetId) {
+  public static CreateCertificateBindingRequest validCreateRequest(Long assetId) {
     return validCreateRequest(assetId, BindingType.MQTT_ENDPOINT, "mqtt.example.com", 8883);
   }
 
   public static CreateCertificateBindingRequest validCreateRequest(
-      UUID assetId,
+      Long assetId,
       BindingType bindingType,
       String endpoint,
       Integer port) {
@@ -34,7 +34,7 @@ public final class CertificateBindingFixtures {
 
   public static String validCreateRequestJson(
       ObjectMapper objectMapper,
-      UUID assetId) throws Exception {
+      Long assetId) throws Exception {
     return validCreateRequestJson(objectMapper, validCreateRequest(assetId));
   }
 
@@ -60,7 +60,7 @@ public final class CertificateBindingFixtures {
       MockMvc mockMvc,
       ObjectMapper objectMapper,
       UUID certificateId,
-      UUID assetId,
+      Long assetId,
       BindingType bindingType,
       String endpoint,
       Integer port) throws Exception {
@@ -75,7 +75,7 @@ public final class CertificateBindingFixtures {
       MockMvc mockMvc,
       ObjectMapper objectMapper,
       UUID certificateId,
-      UUID assetId) throws Exception {
+      Long assetId) throws Exception {
     return createAndReturnId(mockMvc, objectMapper, certificateId, validCreateRequest(assetId));
   }
 

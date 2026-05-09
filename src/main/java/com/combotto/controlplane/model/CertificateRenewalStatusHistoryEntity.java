@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "certificate_renewal_status_history")
+@Table(name = "certificate_renewal_status_history", schema = "control_plane")
 public class CertificateRenewalStatusHistoryEntity {
 
   @Id

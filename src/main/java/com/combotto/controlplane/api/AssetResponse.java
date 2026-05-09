@@ -1,32 +1,33 @@
 package com.combotto.controlplane.api;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
 import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Asset record returned by the control plane")
 public record AssetResponse(
-                @Schema(description = "Unique asset identifier.", example = "11111111-1111-1111-1111-111111111111")
-                UUID id,
-                @Schema(description = "Owning tenant identifier.", example = "demo-tenant")
-                String tenantId,
-                @Schema(description = "Display name for the asset.", example = "Primary MQTT Broker")
-                String name,
-                @Schema(description = "Asset type rendered as a string enum.", example = "BROKER")
-                String assetType,
-                @Schema(description = "Deployment environment or ring.", example = "prod-eu-west")
-                String environment,
-                @Schema(description = "Hostname for the asset.", example = "broker-01.example.com")
-                String hostname,
-                @Schema(description = "Physical or logical location.", example = "eu-west-1")
-                String location,
-                @Schema(description = "Creation timestamp.", example = "2026-04-20T12:00:00Z")
-                OffsetDateTime createdAt,
-                @Schema(description = "Last update timestamp.", example = "2026-04-20T12:05:00Z")
-                OffsetDateTime updatedAt,
-                @Schema(description = "User or service that created the record.", example = "demo-writer")
-                String createdBy,
-                @Schema(description = "User or service that last updated the record.", example = "demo-writer")
-                String updatedBy) {
+    @Schema(description = "Combotto Monitor asset identifier.", example = "7")
+    Long id,
+    @Schema(description = "Owning Combotto company identifier.", example = "1001")
+    Long companyId,
+    @Schema(description = "Combotto asset type.", example = "gateway")
+    String assetType,
+    @Schema(description = "Display name for the asset.", example = "gateway")
+    String name,
+    @Schema(description = "Combotto external asset reference.", example = "mqtt://192.168.1.91:1883")
+    String externalRef,
+    @Schema(description = "Parent asset identifier for fleet hierarchy.", example = "7")
+    Long parentAssetId,
+    @Schema(description = "Device serial number, when known.", example = "B-L475E-IOT01A2")
+    String serialNumber,
+    @Schema(description = "Hardware model, when known.", example = "STM32L475")
+    String hardwareModel,
+    @Schema(description = "Firmware version, when known.", example = "1.0.0")
+    String firmwareVersion,
+    @Schema(description = "Protocol used by the asset.", example = "mqtt")
+    String protocol,
+    @Schema(description = "Human-readable site label.", example = "lab")
+    String siteLabel,
+    @Schema(description = "Raw metadata JSON maintained by Combotto Monitor.")
+    String metadataJson,
+    @Schema(description = "Whether Combotto Monitor has soft-deleted this asset.", example = "false")
+    boolean deleted) {
 }

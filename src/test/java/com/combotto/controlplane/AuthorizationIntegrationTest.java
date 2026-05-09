@@ -7,8 +7,10 @@ import static com.combotto.controlplane.support.SecurityTestSupport.writeOnly;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +35,8 @@ import tools.jackson.databind.ObjectMapper;
 class AuthorizationIntegrationTest {
 
   @Container
-  static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16");
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
+      .withInitScript("combotto-assets-test-schema.sql");
 
   @DynamicPropertySource
   static void configureProperties(DynamicPropertyRegistry registry) {
@@ -166,7 +169,8 @@ class AuthorizationIntegrationTest {
   void readScope_canReadActuatorPrometheus() throws Exception {
     mockMvc.perform(get("/actuator/prometheus")
         .with(readOnly()))
-        .andExpect(status().isOk());
+        .andExpect(status().isOk())
+        .andExpect(content().string(containsString("combotto_certificate_metrics_refresh_success")));
   }
 
   @Test

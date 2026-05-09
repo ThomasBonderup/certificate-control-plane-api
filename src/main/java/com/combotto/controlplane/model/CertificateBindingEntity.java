@@ -15,7 +15,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "certificate_bindings", uniqueConstraints = @UniqueConstraint(name = "uq_certificate_asset_binding", columnNames = {
+@Table(name = "certificate_bindings", schema = "control_plane", uniqueConstraints = @UniqueConstraint(name = "uq_certificate_asset_binding", columnNames = {
     "certificate_id", "asset_id", "binding_type", "endpoint", "port"
 }))
 public class CertificateBindingEntity {

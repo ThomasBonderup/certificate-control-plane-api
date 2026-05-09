@@ -18,7 +18,7 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "http://localhost:8080"
+      "value": "http://localhost:8082"
     },
     {
       "key": "keycloakBaseUrl",
@@ -1076,19 +1076,10 @@
       ]
     },
     {
-      "name": "Create Asset",
+      "name": "List Assets",
       "request": {
-        "method": "POST",
-        "header": [
-          {
-            "key": "Content-Type",
-            "value": "application/json"
-          }
-        ],
-        "body": {
-          "mode": "raw",
-          "raw": "{\n  \"tenantId\": \"{{accessTokenTenantId}}\",\n  \"name\": \"Primary Gateway Asset\",\n  \"assetType\": \"GATEWAY\",\n  \"environment\": \"production\",\n  \"hostname\": \"gateway-01.example.com\",\n  \"location\": \"eu-west-1\"\n}"
-        },
+        "method": "GET",
+        "header": [],
         "url": {
           "raw": "{{baseUrl}}/api/assets",
           "host": [
@@ -1099,7 +1090,7 @@
             "assets"
           ]
         },
-        "description": "Creates an asset and stores the returned id into `assetId`. The request body tenantId must match the JWT `tenantId` claim."
+        "description": "Lists active Combotto Monitor assets and stores the first returned id into `assetId` for binding requests."
       },
       "event": [
         {
@@ -1107,13 +1098,13 @@
           "script": {
             "type": "text/javascript",
             "exec": [
-              "pm.test(\"status is 201\", function () {",
-              "  pm.response.to.have.status(201);",
+              "pm.test(\"status is 200\", function () {",
+              "  pm.response.to.have.status(200);",
               "});",
               "",
               "var body = pm.response.json();",
-              "if (body && body.id) {",
-              "  pm.collectionVariables.set(\"assetId\", body.id);",
+              "if (body && body.content && body.content.length && body.content[0].id) {",
+              "  pm.collectionVariables.set(\"assetId\", body.content[0].id);",
               "}"
             ]
           }
@@ -1146,7 +1137,7 @@
             "bindings"
           ]
         },
-        "description": "Creates a certificate binding. Run `Create Certificate` and `Create Asset` first, or set `certificateId` and `assetId` manually."
+        "description": "Creates a certificate binding. Run `Create Certificate` and `List Assets` first, or set `certificateId` and an existing Combotto Monitor `assetId` manually."
       },
       "event": [
         {

@@ -1,7 +1,5 @@
 package com.combotto.controlplane.api;
 
-import java.util.UUID;
-
 import com.combotto.controlplane.model.BindingType;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -9,9 +7,9 @@ import jakarta.validation.constraints.NotNull;
 
 @Schema(description = "Payload used to bind a certificate to an asset or endpoint")
 public record CreateCertificateBindingRequest(
-    @Schema(description = "Asset identifier that the certificate should be bound to.", example = "11111111-1111-1111-1111-111111111111")
+    @Schema(description = "Combotto Monitor asset identifier that the certificate should be bound to.", example = "7")
     @NotNull
-    UUID assetId,
+    Long assetId,
     @Schema(description = "Type of binding to create.", example = "BROKER_ENDPOINT")
     @NotNull
     BindingType bindingType,

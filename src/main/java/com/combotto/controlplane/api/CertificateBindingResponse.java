@@ -14,8 +14,8 @@ public record CertificateBindingResponse(
     UUID certificateId,
     @Schema(description = "Certificate display name.", example = "Broker TLS Certificate")
     String certificateName,
-    @Schema(description = "Associated asset identifier.", example = "11111111-1111-1111-1111-111111111111")
-    UUID assetId,
+    @Schema(description = "Associated Combotto Monitor asset identifier.", example = "7")
+    Long assetId,
     @Schema(description = "Asset display name.", example = "Primary MQTT Broker")
     String assetName,
     @Schema(description = "Type of asset-to-certificate relationship.", example = "BROKER_ENDPOINT")

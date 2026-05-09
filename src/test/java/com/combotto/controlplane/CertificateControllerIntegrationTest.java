@@ -43,7 +43,8 @@ import static com.combotto.controlplane.support.SecurityTestSupport.authenticate
 class CertificateControllerIntegrationTest {
 
   @Container
-  static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16");
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
+      .withInitScript("combotto-assets-test-schema.sql");
 
   @DynamicPropertySource
   static void configureProperties(DynamicPropertyRegistry registry) {

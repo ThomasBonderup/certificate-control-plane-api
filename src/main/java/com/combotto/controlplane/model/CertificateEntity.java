@@ -5,7 +5,7 @@ import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "certificates")
+@Table(name = "certificates", schema = "control_plane")
 public class CertificateEntity {
 
   @Id
