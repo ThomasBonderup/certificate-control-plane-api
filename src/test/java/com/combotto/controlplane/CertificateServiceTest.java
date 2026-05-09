@@ -20,8 +20,8 @@ import com.combotto.controlplane.model.CertificateEntity;
 import com.combotto.controlplane.model.CertificateStatus;
 import com.combotto.controlplane.model.RenewalStatus;
 import com.combotto.controlplane.repositories.CertificateRepository;
-import com.combotto.controlplane.services.CertificateEventPublisher;
 import com.combotto.controlplane.services.CertificateService;
+import com.combotto.controlplane.services.OutboxEventWriter;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
@@ -58,7 +58,7 @@ class CertificateServiceTest {
   private TenantAccessValidator tenantAccessValidator;
 
   @Mock
-  private CertificateEventPublisher certificateEventPublisher;
+  private OutboxEventWriter outboxEventWriter;
 
   private CertificateService certificateService;
 
@@ -71,7 +71,7 @@ class CertificateServiceTest {
         currentTenantProvider,
         tenantAccessValidator,
         new SimpleMeterRegistry(),
-        certificateEventPublisher);
+        outboxEventWriter);
 
     when(currentTenantProvider.getRequiredTenantId()).thenReturn(TENANT_ID);
     when(currentUserProvider.getCurrentUserId()).thenReturn(CURRENT_USER);
@@ -104,8 +104,8 @@ class CertificateServiceTest {
     certificateService.update(certificateId, request);
 
     verify(certificateRepository).save(entity);
-    verify(certificateEventPublisher, times(1))
-        .publishRenewalStatusChanged(any(CertificateRenewalStatusChangedEvent.class));
+    verify(outboxEventWriter, times(1))
+        .appendRenewalStatusChanged(any(CertificateRenewalStatusChangedEvent.class));
   }
 
   @Test
@@ -133,8 +133,8 @@ class CertificateServiceTest {
 
     verify(certificateRepository).save(entity);
     assertEquals("ops-team", entity.getOwner());
-    verify(certificateEventPublisher, never())
-        .publishRenewalStatusChanged(any(CertificateRenewalStatusChangedEvent.class));
+    verify(outboxEventWriter, never())
+        .appendRenewalStatusChanged(any(CertificateRenewalStatusChangedEvent.class));
   }
 
   @Test
@@ -164,8 +164,8 @@ class CertificateServiceTest {
     assertEquals("Updated certificate name", entity.getName());
     assertEquals("Updated notes", entity.getNotes());
     assertEquals(RenewalStatus.IN_PROGRESS, entity.getRenewalStatus());
-    verify(certificateEventPublisher, never())
-        .publishRenewalStatusChanged(any(CertificateRenewalStatusChangedEvent.class));
+    verify(outboxEventWriter, never())
+        .appendRenewalStatusChanged(any(CertificateRenewalStatusChangedEvent.class));
   }
 
   @Test
@@ -194,7 +194,7 @@ class CertificateServiceTest {
 
     certificateService.update(certificateId, request);
 
-    verify(certificateEventPublisher).publishRenewalStatusChanged(captor.capture());
+    verify(outboxEventWriter).appendRenewalStatusChanged(captor.capture());
 
     CertificateRenewalStatusChangedEvent event = captor.getValue();
     assertEquals(certificateId, event.certificateId());

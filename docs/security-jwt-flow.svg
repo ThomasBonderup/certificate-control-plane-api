@@ -1,0 +1,197 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1480" height="1040" viewBox="0 0 1480 1040" role="img" aria-labelledby="title desc">
+  <title id="title">Spring Security and JWT request flow</title>
+  <desc id="desc">Architecture flow showing how requests move through public routing, JWT authentication, HTTP scope authorization, method role checks, tenant enforcement, and tenant-scoped repository access.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,8 L11,4 z" fill="#27394d"/>
+    </marker>
+    <marker id="arrow-muted" markerWidth="12" markerHeight="12" refX="10" refY="4" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,8 L11,4 z" fill="#8794a3"/>
+    </marker>
+    <filter id="shadow" x="-10%" y="-20%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <style>
+      .page { fill: #f5f7fb; }
+      .title { fill: #102033; font: 700 34px Arial, sans-serif; }
+      .subtitle { fill: #526173; font: 16px Arial, sans-serif; }
+      .section { fill: #ffffff; stroke: #d7dee8; stroke-width: 2; rx: 14; filter: url(#shadow); }
+      .sectionTitle { fill: #102033; font: 700 18px Arial, sans-serif; }
+      .sectionHint { fill: #607085; font: 13px Arial, sans-serif; }
+      .card { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 10; }
+      .cardStrong { fill: #edf4ff; stroke: #7da2d6; stroke-width: 2; rx: 10; }
+      .success { fill: #edf8f0; stroke: #77b883; stroke-width: 2; rx: 10; }
+      .deny { fill: #fff0f0; stroke: #d86b6b; stroke-width: 2; rx: 10; }
+      .warn { fill: #fff8e8; stroke: #d6a03a; stroke-width: 2; rx: 10; }
+      .tenant { fill: #eef9f7; stroke: #58a99c; stroke-width: 2; rx: 10; }
+      .data { fill: #f3f0ff; stroke: #9c83d8; stroke-width: 2; rx: 10; }
+      .label { fill: #102033; font: 700 16px Arial, sans-serif; }
+      .body { fill: #304156; font: 14px Arial, sans-serif; }
+      .small { fill: #5a687a; font: 13px Arial, sans-serif; }
+      .code { fill: #243447; font: 13px Menlo, Consolas, monospace; }
+      .codeSmall { fill: #425269; font: 12px Menlo, Consolas, monospace; }
+      .arrow { stroke: #27394d; stroke-width: 3; fill: none; marker-end: url(#arrow); }
+      .mutedArrow { stroke: #8794a3; stroke-width: 2.4; fill: none; stroke-dasharray: 7 7; marker-end: url(#arrow-muted); }
+      .badge401 { fill: #c83f49; }
+      .badge403 { fill: #b87916; }
+      .badge400 { fill: #b87916; }
+      .badge404 { fill: #6b5fc7; }
+      .badge200 { fill: #267245; }
+      .badgeText { fill: #ffffff; font: 700 13px Arial, sans-serif; }
+    </style>
+  </defs>
+
+  <rect class="page" width="1480" height="1040"/>
+  <text class="title" x="64" y="62">Security config and JWT flow</text>
+  <text class="subtitle" x="64" y="92">A protected API request crosses four boundaries: authentication, HTTP authorization, method authorization, and tenant isolation.</text>
+
+  <rect class="section" x="64" y="126" width="312" height="236"/>
+  <text class="sectionTitle" x="92" y="160">1. Edge routing</text>
+  <text class="sectionHint" x="92" y="184">Spring Security receives</text>
+  <text class="sectionHint" x="92" y="200">every request first.</text>
+  <rect class="cardStrong" x="92" y="214" width="256" height="86"/>
+  <text class="label" x="220" y="240" text-anchor="middle">HTTP request</text>
+  <text class="body" x="220" y="264" text-anchor="middle">Client sends path, method,</text>
+  <text class="body" x="220" y="284" text-anchor="middle">and optional bearer token</text>
+  <text class="code" x="220" y="326" text-anchor="middle">SecurityFilterChain</text>
+  <text class="codeSmall" x="220" y="344" text-anchor="middle">csrf().disable() + STATELESS</text>
+
+  <rect class="section" x="420" y="126" width="420" height="236"/>
+  <text class="sectionTitle" x="448" y="160">2. Public or protected?</text>
+  <text class="sectionHint" x="448" y="184">The path decides whether JWT</text>
+  <text class="sectionHint" x="448" y="200">authentication is needed.</text>
+  <rect class="success" x="448" y="214" width="160" height="90"/>
+  <text class="label" x="528" y="242" text-anchor="middle">Public</text>
+  <text class="body" x="528" y="266" text-anchor="middle">health, info,</text>
+  <text class="body" x="528" y="286" text-anchor="middle">OpenAPI, Swagger</text>
+  <rect class="card" x="652" y="214" width="160" height="90"/>
+  <text class="label" x="732" y="242" text-anchor="middle">Protected</text>
+  <text class="body" x="732" y="266" text-anchor="middle">/api/**</text>
+  <text class="body" x="732" y="286" text-anchor="middle">metrics, prometheus</text>
+  <rect class="success" x="478" y="318" width="112" height="28"/>
+  <text class="small" x="534" y="337" text-anchor="middle">permitAll()</text>
+  <rect class="success" x="606" y="318" width="126" height="28"/>
+  <text class="small" x="669" y="337" text-anchor="middle">returns normally</text>
+  <text class="codeSmall" x="732" y="198" text-anchor="middle">authorizeHttpRequests()</text>
+
+  <rect class="section" x="884" y="126" width="492" height="236"/>
+  <text class="sectionTitle" x="912" y="160">3. JWT authentication</text>
+  <text class="sectionHint" x="912" y="184">Resource server validates the token</text>
+  <text class="sectionHint" x="912" y="200">before controller code runs.</text>
+  <rect class="cardStrong" x="912" y="214" width="204" height="90"/>
+  <text class="label" x="1014" y="240" text-anchor="middle">Bearer token</text>
+  <text class="body" x="1014" y="264" text-anchor="middle">issuer, expiry, signature</text>
+  <text class="body" x="1014" y="284" text-anchor="middle">checked against JWKS</text>
+  <rect class="deny" x="1144" y="214" width="204" height="90"/>
+  <text class="label" x="1246" y="240" text-anchor="middle">Authentication failure</text>
+  <text class="body" x="1246" y="264" text-anchor="middle">missing, malformed,</text>
+  <text class="body" x="1246" y="284" text-anchor="middle">expired, or wrong issuer</text>
+  <rect class="badge401" x="1188" y="318" width="116" height="28" rx="14"/>
+  <text class="badgeText" x="1246" y="337" text-anchor="middle">401 invalid</text>
+  <text class="codeSmall" x="1014" y="326" text-anchor="middle">oauth2ResourceServer().jwt()</text>
+
+  <path class="arrow" d="M348 258 H448"/>
+  <path class="arrow" d="M812 258 H912"/>
+
+  <rect class="section" x="64" y="430" width="404" height="228"/>
+  <text class="sectionTitle" x="92" y="464">4. Authority mapping</text>
+  <text class="sectionHint" x="92" y="488">The valid JWT becomes an Authentication</text>
+  <text class="sectionHint" x="92" y="504">in the security context.</text>
+  <rect class="cardStrong" x="92" y="520" width="160" height="94"/>
+  <text class="label" x="172" y="548" text-anchor="middle">Scopes</text>
+  <text class="body" x="172" y="572" text-anchor="middle">scope claim maps to</text>
+  <text class="code" x="172" y="594" text-anchor="middle">SCOPE_*</text>
+  <rect class="cardStrong" x="280" y="520" width="160" height="94"/>
+  <text class="label" x="360" y="548" text-anchor="middle">Roles</text>
+  <text class="body" x="360" y="572" text-anchor="middle">JWT roles map to</text>
+  <text class="code" x="360" y="594" text-anchor="middle">ROLE_*</text>
+  <text class="code" x="266" y="640" text-anchor="middle">JwtAuthenticationConverter</text>
+
+  <rect class="section" x="512" y="430" width="404" height="228"/>
+  <text class="sectionTitle" x="540" y="464">5. HTTP authorization</text>
+  <text class="sectionHint" x="540" y="488">Path and method are checked</text>
+  <text class="sectionHint" x="540" y="504">before the controller is invoked.</text>
+  <rect class="success" x="540" y="520" width="160" height="94"/>
+  <text class="label" x="620" y="548" text-anchor="middle">Read paths</text>
+  <text class="code" x="620" y="572" text-anchor="middle">GET /api/**</text>
+  <text class="code" x="620" y="594" text-anchor="middle">SCOPE_read</text>
+  <rect class="warn" x="728" y="520" width="160" height="94"/>
+  <text class="label" x="808" y="548" text-anchor="middle">Write paths</text>
+  <text class="code" x="808" y="572" text-anchor="middle">POST/PATCH/DELETE</text>
+  <text class="code" x="808" y="594" text-anchor="middle">SCOPE_write</text>
+  <rect class="badge403" x="636" y="622" width="156" height="28" rx="14"/>
+  <text class="badgeText" x="714" y="641" text-anchor="middle">403 missing scope</text>
+
+  <rect class="section" x="960" y="430" width="416" height="228"/>
+  <text class="sectionTitle" x="988" y="464">6. Controller and method security</text>
+  <text class="sectionHint" x="988" y="488">Endpoint code runs only after</text>
+  <text class="sectionHint" x="988" y="504">the filter-level gates pass.</text>
+  <rect class="card" x="988" y="520" width="160" height="94"/>
+  <text class="label" x="1068" y="548" text-anchor="middle">Controller</text>
+  <text class="body" x="1068" y="572" text-anchor="middle">binds request, then</text>
+  <text class="body" x="1068" y="594" text-anchor="middle">application service</text>
+  <rect class="warn" x="1180" y="520" width="168" height="94"/>
+  <text class="label" x="1264" y="548" text-anchor="middle">Method security</text>
+  <text class="code" x="1264" y="572" text-anchor="middle">@PreAuthorize</text>
+  <text class="body" x="1264" y="594" text-anchor="middle">delete needs ADMIN</text>
+  <rect class="badge403" x="1202" y="622" width="124" height="28" rx="14"/>
+  <text class="badgeText" x="1264" y="641" text-anchor="middle">403 no role</text>
+  <text class="codeSmall" x="1264" y="504" text-anchor="middle">@EnableMethodSecurity</text>
+
+  <path class="arrow" d="M440 568 H540"/>
+  <path class="arrow" d="M888 568 H988"/>
+
+  <rect class="section" x="64" y="724" width="404" height="238"/>
+  <text class="sectionTitle" x="92" y="758">7. Tenant context</text>
+  <text class="sectionHint" x="92" y="782">Business code trusts the authenticated JWT,</text>
+  <text class="sectionHint" x="92" y="800">not caller-provided tenant data.</text>
+  <rect class="tenant" x="92" y="814" width="184" height="96"/>
+  <text class="label" x="184" y="842" text-anchor="middle">Tenant provider</text>
+  <text class="body" x="184" y="866" text-anchor="middle">reads tenantId from</text>
+  <text class="body" x="184" y="886" text-anchor="middle">SecurityContext JWT</text>
+  <rect class="deny" x="304" y="814" width="136" height="96"/>
+  <text class="label" x="372" y="846" text-anchor="middle">No tenantId</text>
+  <text class="body" x="372" y="870" text-anchor="middle">authentication is</text>
+  <text class="body" x="372" y="890" text-anchor="middle">insufficient</text>
+  <rect class="badge401" x="314" y="924" width="116" height="28" rx="14"/>
+  <text class="badgeText" x="372" y="943" text-anchor="middle">401 no tenant</text>
+
+  <rect class="section" x="512" y="724" width="404" height="238"/>
+  <text class="sectionTitle" x="540" y="758">8. Tenant enforcement</text>
+  <text class="sectionHint" x="540" y="782">The authenticated tenant becomes</text>
+  <text class="sectionHint" x="540" y="800">the boundary for tenant-owned data.</text>
+  <rect class="tenant" x="540" y="814" width="172" height="96"/>
+  <text class="label" x="626" y="842" text-anchor="middle">Tenant filters</text>
+  <text class="body" x="626" y="866" text-anchor="middle">request tenantId must</text>
+  <text class="body" x="626" y="886" text-anchor="middle">match JWT tenantId</text>
+  <rect class="data" x="740" y="814" width="160" height="96"/>
+  <text class="label" x="820" y="842" text-anchor="middle">Repository</text>
+  <text class="body" x="820" y="866" text-anchor="middle">query by id and</text>
+  <text class="body" x="820" y="886" text-anchor="middle">JWT tenantId</text>
+  <rect class="badge400" x="556" y="924" width="140" height="28" rx="14"/>
+  <text class="badgeText" x="626" y="943" text-anchor="middle">400 mismatch</text>
+  <rect class="badge404" x="760" y="924" width="120" height="28" rx="14"/>
+  <text class="badgeText" x="820" y="943" text-anchor="middle">404 hidden</text>
+
+  <rect class="section" x="960" y="724" width="416" height="238"/>
+  <text class="sectionTitle" x="988" y="758">9. Response contract</text>
+  <text class="sectionHint" x="988" y="782">The response code shows which</text>
+  <text class="sectionHint" x="988" y="800">boundary rejected the request.</text>
+  <rect class="success" x="1000" y="814" width="156" height="96"/>
+  <text class="label" x="1078" y="842" text-anchor="middle">Allowed</text>
+  <text class="body" x="1078" y="866" text-anchor="middle">controller</text>
+  <text class="body" x="1078" y="886" text-anchor="middle">returns DTO</text>
+  <rect class="card" x="1192" y="814" width="156" height="96"/>
+  <text class="label" x="1270" y="842" text-anchor="middle">Denied</text>
+  <text class="body" x="1270" y="866" text-anchor="middle">ApiError</text>
+  <text class="body" x="1270" y="886" text-anchor="middle">status + path</text>
+  <rect class="badge200" x="1024" y="924" width="108" height="28" rx="14"/>
+  <text class="badgeText" x="1078" y="943" text-anchor="middle">2xx</text>
+
+  <path class="arrow" d="M440 862 H540"/>
+  <path class="arrow" d="M900 862 H1000"/>
+
+  <rect x="64" y="986" width="1352" height="2" fill="#d7dee8"/>
+  <text class="small" x="64" y="1008">Code anchors: SecurityConfig, jwtAuthenticationConverter(), JsonSecurityErrorWriter, CurrentTenantProvider,</text>
+  <text class="small" x="64" y="1026">TenantAccessValidator, @PreAuthorize delete methods, tenant-scoped repository queries.</text>
+</svg>

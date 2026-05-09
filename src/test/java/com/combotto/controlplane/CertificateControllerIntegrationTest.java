@@ -29,8 +29,10 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
 import com.combotto.controlplane.api.CreateCertificateRequest;
+import com.combotto.controlplane.model.CertificateRenewalStatusHistoryEntity;
 import com.combotto.controlplane.model.CertificateStatus;
 import com.combotto.controlplane.model.RenewalStatus;
+import com.combotto.controlplane.repositories.CertificateRenewalStatusHistoryRepository;
 import com.combotto.controlplane.repositories.CertificateRepository;
 import com.combotto.controlplane.services.CertificateEventPublisher;
 import com.combotto.controlplane.support.CertificateFixtures;
@@ -62,11 +64,15 @@ class CertificateControllerIntegrationTest {
   @Autowired
   private CertificateRepository certificateRepository;
 
+  @Autowired
+  private CertificateRenewalStatusHistoryRepository certificateRenewalStatusHistoryRepository;
+
   @MockitoBean
   private CertificateEventPublisher certificateEventPublisher;
 
   @BeforeEach
   void setUp() {
+    certificateRenewalStatusHistoryRepository.deleteAll();
     certificateRepository.deleteAll();
   }
 
@@ -185,6 +191,89 @@ class CertificateControllerIntegrationTest {
         .andExpect(jsonPath("$.error").value("Not Found"))
         .andExpect(jsonPath("$.message").value("Certificate not found: " + missingId))
         .andExpect(jsonPath("$.path").value("/api/certificates/" + missingId));
+  }
+
+  @Test
+  void getRenewalHistory_returns200_andRowsInDescendingOccurredAtOrder() throws Exception {
+    UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
+
+    OffsetDateTime oldestOccurredAt = OffsetDateTime.parse("2026-04-20T08:00:00Z");
+    OffsetDateTime middleOccurredAt = OffsetDateTime.parse("2026-04-21T08:00:00Z");
+    OffsetDateTime newestOccurredAt = OffsetDateTime.parse("2026-04-22T08:00:00Z");
+
+    saveRenewalHistoryRow(certificateId, "demo-tenant", "NOT_STATUS", "PLANNED", null, "oldest-user",
+        oldestOccurredAt);
+    saveRenewalHistoryRow(certificateId, "demo-tenant", "PLANNED", "IN_PROGRESS", null, "middle-user",
+        middleOccurredAt);
+    saveRenewalHistoryRow(certificateId, "demo-tenant", "IN_PROGRESS", "BLOCKED", "Waiting for CAB", "newest-user",
+        newestOccurredAt);
+
+    String responseBody = mockMvc.perform(get("/api/certificates/{id}/renewal-history", certificateId)
+        .with(authenticated()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(3))
+        .andExpect(jsonPath("$[0].updatedBy").value("newest-user"))
+        .andExpect(jsonPath("$[1].updatedBy").value("middle-user"))
+        .andExpect(jsonPath("$[2].updatedBy").value("oldest-user"))
+        .andReturn()
+        .getResponse()
+        .getContentAsString();
+
+    JsonNode body = objectMapper.readTree(responseBody);
+    assertThat(OffsetDateTime.parse(body.get(0).get("occurredAt").asText())).isEqualTo(newestOccurredAt);
+    assertThat(OffsetDateTime.parse(body.get(1).get("occurredAt").asText())).isEqualTo(middleOccurredAt);
+    assertThat(OffsetDateTime.parse(body.get(2).get("occurredAt").asText())).isEqualTo(oldestOccurredAt);
+  }
+
+  @Test
+  void getRenewalHistory_returns200_andEmptyList_whenCertificateHasNoHistoryRows() throws Exception {
+    UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
+
+    mockMvc.perform(get("/api/certificates/{id}/renewal-history", certificateId)
+        .with(authenticated()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.length()").value(0));
+  }
+
+  @Test
+  void getRenewalHistory_returns404_whenCertificateDoesNotExist() throws Exception {
+    UUID missingId = UUID.randomUUID();
+
+    mockMvc.perform(get("/api/certificates/{id}/renewal-history", missingId)
+        .with(authenticated()))
+        .andExpect(status().isNotFound())
+        .andExpect(jsonPath("$.status").value(404))
+        .andExpect(jsonPath("$.error").value("Not Found"))
+        .andExpect(jsonPath("$.message").value("Certificate not found: " + missingId))
+        .andExpect(jsonPath("$.path").value("/api/certificates/" + missingId + "/renewal-history"));
+  }
+
+  @Test
+  void getRenewalHistory_returns403_whenCertificateBelongsToAnotherTenant() throws Exception {
+    UUID certificateId = CertificateFixtures.createAndReturnId(
+        mockMvc,
+        objectMapper,
+        CertificateFixtures.validCreateRequest(
+            "other-tenant",
+            "Other Tenant Certificate",
+            "other.example.com",
+            "Combotto CA",
+            "other-serial",
+            "other-fingerprint",
+            OffsetDateTime.parse("2026-04-01T00:00:00Z"),
+            OffsetDateTime.parse("2026-07-01T00:00:00Z"),
+            CertificateStatus.ACTIVE,
+            RenewalStatus.NOT_STATUS,
+            "platform-team",
+            "belongs to another tenant"));
+
+    mockMvc.perform(get("/api/certificates/{id}/renewal-history", certificateId)
+        .with(authenticated()))
+        .andExpect(status().isForbidden())
+        .andExpect(jsonPath("$.status").value(403))
+        .andExpect(jsonPath("$.error").value("Forbidden"))
+        .andExpect(jsonPath("$.message").value("Access denied"))
+        .andExpect(jsonPath("$.path").value("/api/certificates/" + certificateId + "/renewal-history"));
   }
 
   @Test
@@ -1421,5 +1510,26 @@ class CertificateControllerIntegrationTest {
         renewalStatus,
         owner,
         notes);
+  }
+
+  private void saveRenewalHistoryRow(
+      UUID certificateId,
+      String tenantId,
+      String oldRenewalStatus,
+      String newRenewalStatus,
+      String blockedReason,
+      String updatedBy,
+      OffsetDateTime occurredAt) {
+    CertificateRenewalStatusHistoryEntity entity = new CertificateRenewalStatusHistoryEntity();
+    entity.setId(UUID.randomUUID());
+    entity.setCertificateId(certificateId);
+    entity.setTenantId(tenantId);
+    entity.setOldRenewalStatus(oldRenewalStatus);
+    entity.setNewRenewalStatus(newRenewalStatus);
+    entity.setBlockedReason(blockedReason);
+    entity.setUpdatedBy(updatedBy);
+    entity.setOccurredAt(occurredAt);
+    entity.setCreatedAt(occurredAt.plusSeconds(1));
+    certificateRenewalStatusHistoryRepository.save(entity);
   }
 }

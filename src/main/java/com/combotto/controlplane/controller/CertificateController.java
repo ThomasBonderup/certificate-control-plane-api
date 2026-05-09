@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
 import jakarta.validation.Valid;
 
+import com.combotto.controlplane.api.CertificateRenewalHistoryResponse;
 import com.combotto.controlplane.api.CertificateResponse;
 import com.combotto.controlplane.api.CertificateSummaryResponse;
 import com.combotto.controlplane.api.CreateCertificateRequest;
@@ -32,11 +33,13 @@ import com.combotto.controlplane.common.ApiError;
 import com.combotto.controlplane.common.PageableSanitizer;
 import com.combotto.controlplane.model.CertificateStatus;
 import com.combotto.controlplane.model.RenewalStatus;
+import com.combotto.controlplane.services.CertificateRenewalStatusHistoryService;
 import com.combotto.controlplane.services.CertificateService;
 
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -49,9 +52,13 @@ import org.springdoc.core.annotations.ParameterObject;
 public class CertificateController {
 
   private final CertificateService certificateService;
+  private final CertificateRenewalStatusHistoryService certificateRenewalStatusHistoryService;
 
-  public CertificateController(CertificateService certificateService) {
+  public CertificateController(
+      CertificateService certificateService,
+      CertificateRenewalStatusHistoryService certificateRenewalStatusHistoryService) {
     this.certificateService = certificateService;
+    this.certificateRenewalStatusHistoryService = certificateRenewalStatusHistoryService;
   }
 
   @Operation(summary = "Create certificate", description = "Registers a new certificate for the authenticated tenant")
@@ -83,14 +90,10 @@ public class CertificateController {
   })
   @GetMapping
   public Page<CertificateResponse> list(
-      @Parameter(description = "Optional tenant filter. Must match the authenticated tenant when provided.", example = "demo-tenant")
-      @RequestParam(required = false) String tenantId,
-      @Parameter(description = "Optional certificate lifecycle status filter.", example = "ACTIVE")
-      @RequestParam(required = false) CertificateStatus status,
-      @Parameter(description = "Optional renewal workflow status filter.", example = "IN_PROGRESS")
-      @RequestParam(required = false) RenewalStatus renewalStatus,
-      @ParameterObject
-      @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+      @Parameter(description = "Optional tenant filter. Must match the authenticated tenant when provided.", example = "demo-tenant") @RequestParam(required = false) String tenantId,
+      @Parameter(description = "Optional certificate lifecycle status filter.", example = "ACTIVE") @RequestParam(required = false) CertificateStatus status,
+      @Parameter(description = "Optional renewal workflow status filter.", example = "IN_PROGRESS") @RequestParam(required = false) RenewalStatus renewalStatus,
+      @ParameterObject @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
     return certificateService.list(
         tenantId,
         status,
@@ -106,16 +109,11 @@ public class CertificateController {
   })
   @GetMapping("/expiring-soon")
   public Page<CertificateResponse> listExpiringSoon(
-      @Parameter(description = "Number of days ahead to inspect for expiry.", example = "30")
-      @RequestParam(defaultValue = "30") int days,
-      @Parameter(description = "Optional tenant filter. Must match the authenticated tenant when provided.", example = "demo-tenant")
-      @RequestParam(required = false) String tenantId,
-      @Parameter(description = "Optional owner filter.", example = "platform-team")
-      @RequestParam(required = false) String owner,
-      @Parameter(description = "Optional renewal workflow status filter.", example = "PLANNED")
-      @RequestParam(required = false) RenewalStatus renewalStatus,
-      @ParameterObject
-      @PageableDefault(size = 20, sort = "notAfter", direction = Sort.Direction.ASC) Pageable pageable) {
+      @Parameter(description = "Number of days ahead to inspect for expiry.", example = "30") @RequestParam(defaultValue = "30") int days,
+      @Parameter(description = "Optional tenant filter. Must match the authenticated tenant when provided.", example = "demo-tenant") @RequestParam(required = false) String tenantId,
+      @Parameter(description = "Optional owner filter.", example = "platform-team") @RequestParam(required = false) String owner,
+      @Parameter(description = "Optional renewal workflow status filter.", example = "PLANNED") @RequestParam(required = false) RenewalStatus renewalStatus,
+      @ParameterObject @PageableDefault(size = 20, sort = "notAfter", direction = Sort.Direction.ASC) Pageable pageable) {
     return certificateService.listExpiringSoon(
         days,
         tenantId,
@@ -131,10 +129,8 @@ public class CertificateController {
   })
   @GetMapping("/attention-needed")
   public Page<CertificateResponse> listAttentionNeeded(
-      @Parameter(description = "Number of days ahead to consider in the attention window.", example = "30")
-      @RequestParam(defaultValue = "30") int days,
-      @ParameterObject
-      @PageableDefault(size = 20, sort = "notAfter", direction = Sort.Direction.ASC) Pageable pageable) {
+      @Parameter(description = "Number of days ahead to consider in the attention window.", example = "30") @RequestParam(defaultValue = "30") int days,
+      @ParameterObject @PageableDefault(size = 20, sort = "notAfter", direction = Sort.Direction.ASC) Pageable pageable) {
     return certificateService.listAttentionNeeded(
         days,
         PageableSanitizer.sanitize(pageable, Sort.by(Sort.Order.asc("notAfter"))));
@@ -146,7 +142,8 @@ public class CertificateController {
       @ApiResponse(responseCode = "404", description = "Certificate not found", content = @Content(schema = @Schema(implementation = ApiError.class)))
   })
   @GetMapping("/{id}")
-  public CertificateResponse getById(@Parameter(description = "Certificate identifier.", example = "22222222-2222-2222-2222-222222222222") @PathVariable UUID id) {
+  public CertificateResponse getById(
+      @Parameter(description = "Certificate identifier.", example = "22222222-2222-2222-2222-222222222222") @PathVariable UUID id) {
     return certificateService.getById(id);
   }
 
@@ -170,7 +167,8 @@ public class CertificateController {
   })
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void delete(@Parameter(description = "Certificate identifier.", example = "22222222-2222-2222-2222-222222222222") @PathVariable UUID id) {
+  public void delete(
+      @Parameter(description = "Certificate identifier.", example = "22222222-2222-2222-2222-222222222222") @PathVariable UUID id) {
     certificateService.delete(id);
   }
 
@@ -179,5 +177,22 @@ public class CertificateController {
   @GetMapping("/summary")
   public CertificateSummaryResponse summary() {
     return certificateService.summary();
+  }
+
+  @Operation(
+      summary = "Get certificate renewal history",
+      description = "Returns renewal workflow history rows for a certificate visible to the authenticated tenant in descending occurredAt order")
+  @ApiResponses({
+      @ApiResponse(
+          responseCode = "200",
+          description = "Renewal history returned successfully",
+          content = @Content(array = @ArraySchema(schema = @Schema(implementation = CertificateRenewalHistoryResponse.class)))),
+      @ApiResponse(responseCode = "403", description = "Certificate belongs to another tenant", content = @Content(schema = @Schema(implementation = ApiError.class))),
+      @ApiResponse(responseCode = "404", description = "Certificate not found", content = @Content(schema = @Schema(implementation = ApiError.class)))
+  })
+  @GetMapping("/{id}/renewal-history")
+  public List<CertificateRenewalHistoryResponse> getRenewalHistory(
+      @Parameter(description = "Certificate identifier.", example = "22222222-2222-2222-2222-222222222222") @PathVariable UUID id) {
+    return certificateRenewalStatusHistoryService.listByCertificateId(id);
   }
 }
