@@ -1,24 +1,7 @@
-create table assets (
-  id uuid primary key,
-  tenant_id varchar(100) not null,
-  name varchar(255) not null,
-  asset_type varchar(100) not null,
-  environment varchar(100),
-  hostname varchar(255),
-  location varchar(255),
-  created_at timestamp with time zone not null,
-  updated_at timestamp with time zone not null
-);
-
-create index idx_assets_tenant_id on assets(tenant_id);
-create index idx_assets_asset_type on assets(asset_type);
-create index idx_assets_environment on assets(environment);
-create index idx_assets_hostname on assets(hostname);
-
 create table certificate_bindings (
     id uuid primary key,
     certificate_id uuid not null references certificates(id) on delete cascade,
-    asset_id uuid not null references assets(id) on delete cascade,
+    asset_id bigint not null references public.assets(id),
     binding_type varchar(100) not null,
     endpoint varchar(255),
     port integer,

@@ -134,4 +134,44 @@ public interface CertificateRepository extends JpaRepository<CertificateEntity, 
       @Param("threshold") OffsetDateTime threshold);
 
   long countByTenantIdAndRenewalStatus(String tenantId, RenewalStatus renewalStatus);
+
+  @Query("""
+      select c.status as status, c.renewalStatus as renewalStatus, count(c) as count
+      from CertificateEntity c
+      group by c.status, c.renewalStatus
+      """)
+  List<CertificateStatusRenewalCount> countByStatusAndRenewalStatus();
+
+  @Query("""
+      select count(c)
+      from CertificateEntity c
+      where c.notAfter is not null
+        and c.notAfter > :now
+        and c.notAfter <= :threshold
+      """)
+  long countExpiringSoon(
+      @Param("now") OffsetDateTime now,
+      @Param("threshold") OffsetDateTime threshold);
+
+  long countByStatus(CertificateStatus status);
+
+  long countByRenewalStatus(RenewalStatus renewalStatus);
+
+  @Query("""
+      select count(c)
+      from CertificateEntity c
+      where not exists (
+        select b.id
+        from CertificateBindingEntity b
+        where b.certificate = c
+      )
+      """)
+  long countUnbound();
+
+  @Query("""
+      select min(c.notAfter)
+      from CertificateEntity c
+      where c.notAfter is not null
+      """)
+  OffsetDateTime findNextExpiry();
 }

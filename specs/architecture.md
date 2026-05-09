@@ -94,16 +94,21 @@ Key fields include:
 
 ### Asset
 
-Represents a managed platform asset.
+Represents a managed platform asset owned by Combotto Monitor.
 
 Key fields include:
 
-- tenantId
-- name
+- id
+- companyId
 - assetType
-- environment
-- hostname
-- location
+- name
+- externalRef
+- parentAssetId
+- serialNumber / hardwareModel / firmwareVersion
+- protocol
+- siteLabel
+- metadataJson
+- isDeleted
 
 ### CertificateBinding
 
@@ -190,22 +195,24 @@ The service uses PostgreSQL as the system of record.
 
 ### Schema management
 
-- Flyway owns schema evolution
+- Flyway owns schema evolution for the `control_plane` schema
 - Hibernate validates schema at startup
 - `ddl-auto` is set to `validate`
+- Combotto Monitor owns `public.assets`; this service only references it
 
 ### Current tables
 
-- `certificates`
-- `assets`
-- `certificate_bindings`
+- `control_plane.certificates`
+- `control_plane.certificate_bindings`
+- `control_plane.certificate_renewal_status_history`
+- `public.assets` (external, owned by Combotto Monitor)
 
 ### Relationship model
 
 `certificate_bindings` references both:
 
-- `certificates(id)`
-- `assets(id)`
+- `control_plane.certificates(id)`
+- `public.assets(id)`
 
 This allows one certificate to be used by multiple assets and one asset to reference multiple certificates.
 
@@ -223,11 +230,10 @@ This allows one certificate to be used by multiple assets and one asset to refer
 
 ### Assets
 
-- `POST /api/assets`
 - `GET /api/assets`
 - `GET /api/assets/{id}`
-- `PATCH /api/assets/{id}`
-- `DELETE /api/assets/{id}`
+- `GET /api/assets/{id}/bindings`
+- `GET /api/assets/{id}/certificates`
 
 ### Certificate bindings
 

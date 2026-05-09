@@ -1,102 +1,44 @@
 package com.combotto.controlplane.support;
 
-import java.util.UUID;
-
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-
-import com.combotto.controlplane.api.CreateAssetRequest;
-import com.combotto.controlplane.model.AssetType;
-
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
-
-import static com.combotto.controlplane.support.SecurityTestSupport.authenticated;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import com.combotto.controlplane.model.AssetEntity;
+import com.combotto.controlplane.repositories.AssetRepository;
 
 public final class AssetFixtures {
+
+  private static long nextId = 1L;
 
   private AssetFixtures() {
   }
 
-  public static CreateAssetRequest validCreateRequest() {
-    return validCreateRequest(
-        "demo-tenant",
-        "Primary Gateway Asset",
-        AssetType.GATEWAY,
-        "production",
-        "gateway-01.example.com",
-        "eu-west-1");
+  public static Long createAndReturnId(AssetRepository assetRepository) {
+    return createAndReturnId(assetRepository, 1001L, "Primary Gateway Asset");
   }
 
-  public static CreateAssetRequest validCreateRequest(
-      String tenantId,
+  public static Long createAndReturnId(
+      AssetRepository assetRepository,
+      Long companyId,
       String name) {
-    return validCreateRequest(
-        tenantId,
-        name,
-        AssetType.GATEWAY,
-        "production",
-        slugify(name) + ".example.com",
-        "eu-west-1");
+    AssetEntity asset = activeAsset(companyId, name);
+    return assetRepository.save(asset).getId();
   }
 
-  public static CreateAssetRequest validCreateRequest(
-      String tenantId,
-      String name,
-      AssetType assetType,
-      String environment,
-      String hostname,
-      String location) {
-    return new CreateAssetRequest(
-        tenantId,
-        name,
-        assetType,
-        environment,
-        hostname,
-        location);
+  public static Long createDeletedAndReturnId(AssetRepository assetRepository, String name) {
+    AssetEntity asset = activeAsset(1001L, name);
+    asset.setDeleted(true);
+    return assetRepository.save(asset).getId();
   }
 
-  public static String validCreateRequestJson(ObjectMapper objectMapper) throws Exception {
-    return validCreateRequestJson(objectMapper, validCreateRequest());
-  }
-
-  public static String validCreateRequestJson(
-      ObjectMapper objectMapper,
-      CreateAssetRequest request) throws Exception {
-    return objectMapper.writeValueAsString(request);
-  }
-
-  public static UUID createAndReturnId(
-      MockMvc mockMvc,
-      ObjectMapper objectMapper) throws Exception {
-    return createAndReturnId(mockMvc, objectMapper, validCreateRequest());
-  }
-
-  public static UUID createAndReturnId(
-      MockMvc mockMvc,
-      ObjectMapper objectMapper,
-      String tenantId,
-      String name) throws Exception {
-    return createAndReturnId(mockMvc, objectMapper, validCreateRequest(tenantId, name));
-  }
-
-  public static UUID createAndReturnId(
-      MockMvc mockMvc,
-      ObjectMapper objectMapper,
-      CreateAssetRequest request) throws Exception {
-    String responseBody = mockMvc.perform(post("/api/assets")
-        .with(authenticated("test-user", request.tenantId()))
-        .contentType(MediaType.APPLICATION_JSON)
-        .content(validCreateRequestJson(objectMapper, request)))
-        .andExpect(status().isCreated())
-        .andReturn()
-        .getResponse()
-        .getContentAsString();
-
-    JsonNode body = objectMapper.readTree(responseBody);
-    return UUID.fromString(body.get("id").asString());
+  public static AssetEntity activeAsset(Long companyId, String name) {
+    AssetEntity asset = new AssetEntity();
+    asset.setId(nextId++);
+    asset.setCompanyId(companyId);
+    asset.setAssetType("gateway");
+    asset.setName(name);
+    asset.setExternalRef("mqtt://" + slugify(name) + ".example.com:1883");
+    asset.setProtocol("mqtt");
+    asset.setSiteLabel("lab");
+    asset.setDeleted(false);
+    return asset;
   }
 
   private static String slugify(String value) {

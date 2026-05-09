@@ -108,6 +108,25 @@
       "webOrigins": []
     },
     {
+      "clientId": "${KEYCLOAK_PROMETHEUS_CLIENT_ID}",
+      "name": "Prometheus Certificate Metrics Scraper",
+      "description": "Machine client for Prometheus to scrape protected certificate posture metrics",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "${KEYCLOAK_PROMETHEUS_CLIENT_SECRET}",
+      "clientAuthenticatorType": "client-secret",
+      "directAccessGrantsEnabled": false,
+      "standardFlowEnabled": false,
+      "serviceAccountsEnabled": true,
+      "fullScopeAllowed": false,
+      "defaultClientScopes": [
+        "controlplane.read"
+      ],
+      "redirectUris": [],
+      "webOrigins": []
+    },
+    {
       "clientId": "${KEYCLOAK_DEMO_WRITE_CLIENT_ID}",
       "name": "Control Plane Write CLI",
       "description": "Local development client for write-only token generation",

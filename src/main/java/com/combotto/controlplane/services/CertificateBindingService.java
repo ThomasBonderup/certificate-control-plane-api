@@ -52,7 +52,7 @@ public class CertificateBindingService {
     CertificateEntity certificate = certificateRepository.findByIdAndTenantId(certificateId, tenantId)
         .orElseThrow(() -> new ResourceNotFoundException("Certificate not found: " + certificateId));
 
-    AssetEntity asset = assetRepository.findByIdAndTenantId(request.assetId(), tenantId)
+    AssetEntity asset = assetRepository.findByIdAndDeletedFalse(request.assetId())
         .orElseThrow(() -> new ResourceNotFoundException("Asset not found: " + request.assetId()));
 
     CertificateBindingEntity binding = new CertificateBindingEntity();
@@ -80,22 +80,22 @@ public class CertificateBindingService {
   }
 
   @Transactional(readOnly = true)
-  public Page<CertificateBindingResponse> listByAssetId(UUID assetId, Pageable pageable) {
+  public Page<CertificateBindingResponse> listByAssetId(Long assetId, Pageable pageable) {
     String tenantId = currentTenantProvider.getRequiredTenantId();
-    if (!assetRepository.existsByIdAndTenantId(assetId, tenantId)) {
+    if (!assetRepository.existsByIdAndDeletedFalse(assetId)) {
       throw new ResourceNotFoundException("Asset not found: " + assetId);
     }
-    return certificateBindingRepository.findByAssetIdAndAssetTenantId(assetId, tenantId, pageable)
+    return certificateBindingRepository.findByAssetIdAndCertificateTenantId(assetId, tenantId, pageable)
         .map(this::toResponse);
   }
 
   @Transactional(readOnly = true)
-  public List<CertificateResponse> listCertificatesByAssetId(UUID assetId) {
+  public List<CertificateResponse> listCertificatesByAssetId(Long assetId) {
     String tenantId = currentTenantProvider.getRequiredTenantId();
-    if (!assetRepository.existsByIdAndTenantId(assetId, tenantId)) {
+    if (!assetRepository.existsByIdAndDeletedFalse(assetId)) {
       throw new ResourceNotFoundException("Asset not found: " + assetId);
     }
-    return certificateBindingRepository.findByAssetIdAndAssetTenantId(assetId, tenantId)
+    return certificateBindingRepository.findByAssetIdAndCertificateTenantId(assetId, tenantId)
         .stream()
         .map(CertificateBindingEntity::getCertificate)
         .map(certificateMapper::toResponse)

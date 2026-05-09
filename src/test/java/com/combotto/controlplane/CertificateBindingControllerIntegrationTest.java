@@ -39,7 +39,8 @@ import tools.jackson.databind.ObjectMapper;
 class CertificateBindingControllerIntegrationTest {
 
   @Container
-  static PostgreSQLContainer postgres = new PostgreSQLContainer("postgres:16");
+  static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16")
+      .withInitScript("combotto-assets-test-schema.sql");
 
   @DynamicPropertySource
   static void configureProperties(DynamicPropertyRegistry registry) {
@@ -73,7 +74,7 @@ class CertificateBindingControllerIntegrationTest {
   @Test
   void create_returns201_location_body_and_persistsCertificateBinding() throws Exception {
     UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
-    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
+    Long assetId = AssetFixtures.createAndReturnId(assetRepository);
 
     String responseBody = mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
         .with(authenticated())
@@ -84,7 +85,7 @@ class CertificateBindingControllerIntegrationTest {
             ".*/api/certificates/.*/bindings")))
         .andExpect(jsonPath("$.certificateId").value(certificateId.toString()))
         .andExpect(jsonPath("$.certificateName").value("Broker TLS Certificate"))
-        .andExpect(jsonPath("$.assetId").value(assetId.toString()))
+        .andExpect(jsonPath("$.assetId").value(assetId.intValue()))
         .andExpect(jsonPath("$.assetName").value("Primary Gateway Asset"))
         .andExpect(jsonPath("$.bindingType").value("MQTT_ENDPOINT"))
         .andExpect(jsonPath("$.endpoint").value("mqtt.example.com"))
@@ -108,7 +109,7 @@ class CertificateBindingControllerIntegrationTest {
   @Test
   void create_returns404_whenCertificateDoesNotExist() throws Exception {
     UUID missingCertificateId = UUID.randomUUID();
-    UUID assetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
+    Long assetId = AssetFixtures.createAndReturnId(assetRepository);
 
     mockMvc.perform(post("/api/certificates/{certificateId}/bindings", missingCertificateId)
         .with(authenticated())
@@ -124,7 +125,7 @@ class CertificateBindingControllerIntegrationTest {
   @Test
   void create_returns404_whenAssetDoesNotExist() throws Exception {
     UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
-    UUID missingAssetId = UUID.randomUUID();
+    Long missingAssetId = 9999L;
 
     mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
         .with(authenticated())
@@ -138,19 +139,16 @@ class CertificateBindingControllerIntegrationTest {
   }
 
   @Test
-  void create_returns404_whenAssetBelongsToDifferentTenant() throws Exception {
+  void create_returns404_whenAssetIsSoftDeleted() throws Exception {
     UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper);
-    UUID otherTenantAssetId = AssetFixtures.createAndReturnId(
-        mockMvc,
-        objectMapper,
-        AssetFixtures.validCreateRequest("other-tenant", "Other Tenant Asset"));
+    Long deletedAssetId = AssetFixtures.createDeletedAndReturnId(assetRepository, "Deleted Asset");
 
     mockMvc.perform(post("/api/certificates/{certificateId}/bindings", certificateId)
         .with(authenticated())
         .contentType(MediaType.APPLICATION_JSON)
-        .content(CertificateBindingFixtures.validCreateRequestJson(objectMapper, otherTenantAssetId)))
+        .content(CertificateBindingFixtures.validCreateRequestJson(objectMapper, deletedAssetId)))
         .andExpect(status().isNotFound())
-        .andExpect(jsonPath("$.message").value("Asset not found: " + otherTenantAssetId));
+        .andExpect(jsonPath("$.message").value("Asset not found: " + deletedAssetId));
   }
 
   @Test
@@ -161,13 +159,9 @@ class CertificateBindingControllerIntegrationTest {
         objectMapper,
         "Gateway Client Certificate");
 
-    UUID gatewayAssetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper);
-    UUID brokerAssetId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Broker Asset");
-    UUID unrelatedAssetId = AssetFixtures.createAndReturnId(
-        mockMvc,
-        objectMapper,
-        "demo-tenant",
-        "Unrelated Asset");
+    Long gatewayAssetId = AssetFixtures.createAndReturnId(assetRepository);
+    Long brokerAssetId = AssetFixtures.createAndReturnId(assetRepository, 1001L, "Broker Asset");
+    Long unrelatedAssetId = AssetFixtures.createAndReturnId(assetRepository, 1001L, "Unrelated Asset");
 
     CertificateBindingFixtures.create(
         mockMvc,
@@ -206,8 +200,8 @@ class CertificateBindingControllerIntegrationTest {
             org.hamcrest.Matchers.everyItem(org.hamcrest.Matchers.is("Broker TLS Certificate"))))
         .andExpect(jsonPath("$.content[*].assetId",
             org.hamcrest.Matchers.containsInAnyOrder(
-                gatewayAssetId.toString(),
-                brokerAssetId.toString())))
+                gatewayAssetId.intValue(),
+                brokerAssetId.intValue())))
         .andExpect(jsonPath("$.content[*].assetName",
             org.hamcrest.Matchers.containsInAnyOrder(
                 "Primary Gateway Asset",
@@ -221,9 +215,9 @@ class CertificateBindingControllerIntegrationTest {
   @Test
   void listByCertificateId_respectsRequestedPageSize() throws Exception {
     UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper, "Broker TLS Certificate");
-    UUID assetCId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset C");
-    UUID assetAId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset A");
-    UUID assetBId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset B");
+    Long assetCId = AssetFixtures.createAndReturnId(assetRepository, 1001L, "Asset C");
+    Long assetAId = AssetFixtures.createAndReturnId(assetRepository, 1001L, "Asset A");
+    Long assetBId = AssetFixtures.createAndReturnId(assetRepository, 1001L, "Asset B");
 
     CertificateBindingFixtures.create(
         mockMvc,
@@ -267,9 +261,9 @@ class CertificateBindingControllerIntegrationTest {
   @Test
   void listByCertificateId_returnsRemainingBindingsOnSecondPage() throws Exception {
     UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper, "Broker TLS Certificate");
-    UUID assetAId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset A");
-    UUID assetBId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset B");
-    UUID assetCId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset C");
+    Long assetAId = AssetFixtures.createAndReturnId(assetRepository, 1001L, "Asset A");
+    Long assetBId = AssetFixtures.createAndReturnId(assetRepository, 1001L, "Asset B");
+    Long assetCId = AssetFixtures.createAndReturnId(assetRepository, 1001L, "Asset C");
 
     CertificateBindingFixtures.create(
         mockMvc,
@@ -314,9 +308,9 @@ class CertificateBindingControllerIntegrationTest {
   @Test
   void listByCertificateId_sortsBindingsByEndpointAscendingWhenRequested() throws Exception {
     UUID certificateId = CertificateFixtures.createAndReturnId(mockMvc, objectMapper, "Broker TLS Certificate");
-    UUID assetZuluId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset Zulu");
-    UUID assetAlphaId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset Alpha");
-    UUID assetMiddleId = AssetFixtures.createAndReturnId(mockMvc, objectMapper, "demo-tenant", "Asset Middle");
+    Long assetZuluId = AssetFixtures.createAndReturnId(assetRepository, 1001L, "Asset Zulu");
+    Long assetAlphaId = AssetFixtures.createAndReturnId(assetRepository, 1001L, "Asset Alpha");
+    Long assetMiddleId = AssetFixtures.createAndReturnId(assetRepository, 1001L, "Asset Middle");
 
     CertificateBindingFixtures.create(
         mockMvc,

@@ -1,64 +1,74 @@
 package com.combotto.controlplane.model;
 
-import java.time.OffsetDateTime;
-import java.util.UUID;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "assets")
+@Table(name = "assets", schema = "public")
 public class AssetEntity {
 
   @Id
-  private UUID id;
+  private Long id;
 
-  @Column(name = "tenant_id", nullable = false)
-  private String tenantId;
+  @Column(name = "company_id", nullable = false)
+  private Long companyId;
+
+  @Column(name = "asset_type", nullable = false)
+  private String assetType;
 
   @Column(nullable = false)
   private String name;
 
-  @Enumerated(EnumType.STRING)
-  @Column(name = "asset_type", nullable = false)
-  private AssetType assetType;
+  @Column(name = "external_ref", nullable = false)
+  private String externalRef;
 
-  private String environment;
+  @Column(name = "parent_asset_id")
+  private Long parentAssetId;
 
-  private String hostname;
+  @Column(name = "serial_number")
+  private String serialNumber;
 
-  private String location;
+  @Column(name = "hardware_model")
+  private String hardwareModel;
 
-  @Column(name = "created_at", nullable = false)
-  private OffsetDateTime createdAt;
+  @Column(name = "firmware_version")
+  private String firmwareVersion;
 
-  @Column(name = "updated_at", nullable = false)
-  private OffsetDateTime updatedAt;
+  private String protocol;
 
-  @Column(name = "created_by")
-  private String createdBy;
+  @Column(name = "site_label")
+  private String siteLabel;
 
-  @Column(name = "updated_by")
-  private String updatedBy;
+  @Column(name = "metadata_json")
+  private String metadataJson;
 
-  public UUID getId() {
+  @Column(name = "is_deleted", nullable = false)
+  private boolean deleted;
+
+  public Long getId() {
     return id;
   }
 
-  public void setId(UUID id) {
+  public void setId(Long id) {
     this.id = id;
   }
 
-  public String getTenantId() {
-    return tenantId;
+  public Long getCompanyId() {
+    return companyId;
   }
 
-  public void setTenantId(String tenantId) {
-    this.tenantId = tenantId;
+  public void setCompanyId(Long companyId) {
+    this.companyId = companyId;
+  }
+
+  public String getAssetType() {
+    return assetType;
+  }
+
+  public void setAssetType(String assetType) {
+    this.assetType = assetType;
   }
 
   public String getName() {
@@ -69,67 +79,75 @@ public class AssetEntity {
     this.name = name;
   }
 
-  public AssetType getAssetType() {
-    return assetType;
+  public String getExternalRef() {
+    return externalRef;
   }
 
-  public void setAssetType(AssetType assetType) {
-    this.assetType = assetType;
+  public void setExternalRef(String externalRef) {
+    this.externalRef = externalRef;
   }
 
-  public String getEnvironment() {
-    return environment;
+  public Long getParentAssetId() {
+    return parentAssetId;
   }
 
-  public void setEnvironment(String environment) {
-    this.environment = environment;
+  public void setParentAssetId(Long parentAssetId) {
+    this.parentAssetId = parentAssetId;
   }
 
-  public String getHostname() {
-    return hostname;
+  public String getSerialNumber() {
+    return serialNumber;
   }
 
-  public void setHostname(String hostname) {
-    this.hostname = hostname;
+  public void setSerialNumber(String serialNumber) {
+    this.serialNumber = serialNumber;
   }
 
-  public String getLocation() {
-    return location;
+  public String getHardwareModel() {
+    return hardwareModel;
   }
 
-  public void setLocation(String location) {
-    this.location = location;
+  public void setHardwareModel(String hardwareModel) {
+    this.hardwareModel = hardwareModel;
   }
 
-  public OffsetDateTime getCreatedAt() {
-    return createdAt;
+  public String getFirmwareVersion() {
+    return firmwareVersion;
   }
 
-  public void setCreatedAt(OffsetDateTime createdAt) {
-    this.createdAt = createdAt;
+  public void setFirmwareVersion(String firmwareVersion) {
+    this.firmwareVersion = firmwareVersion;
   }
 
-  public OffsetDateTime getUpdatedAt() {
-    return updatedAt;
+  public String getProtocol() {
+    return protocol;
   }
 
-  public void setUpdatedAt(OffsetDateTime updatedAt) {
-    this.updatedAt = updatedAt;
+  public void setProtocol(String protocol) {
+    this.protocol = protocol;
   }
 
-  public String getCreatedBy() {
-    return createdBy;
+  public String getSiteLabel() {
+    return siteLabel;
   }
 
-  public void setCreatedBy(String createdBy) {
-    this.createdBy = createdBy;
+  public void setSiteLabel(String siteLabel) {
+    this.siteLabel = siteLabel;
   }
 
-  public String getUpdatedBy() {
-    return updatedBy;
+  public String getMetadataJson() {
+    return metadataJson;
   }
 
-  public void setUpdatedBy(String updatedBy) {
-    this.updatedBy = updatedBy;
+  public void setMetadataJson(String metadataJson) {
+    this.metadataJson = metadataJson;
+  }
+
+  public boolean isDeleted() {
+    return deleted;
+  }
+
+  public void setDeleted(boolean deleted) {
+    this.deleted = deleted;
   }
 }

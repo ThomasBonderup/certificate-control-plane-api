@@ -1,6 +1,6 @@
 create table certificate_renewal_status_history (
   id uuid primary key,
-  certificate_id uuid not null,
+  certificate_id uuid not null references certificates(id) on delete cascade,
   tenant_id varchar(255) not null,
   old_renewal_status varchar(100),
   new_renewal_status varchar(100) not null,

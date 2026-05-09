@@ -38,21 +38,25 @@ spring:
         spring.json.trusted.packages: "com.combotto.controlplane.*"
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/combotto_control_plane}
-    username: ${SPRING_DATASOURCE_USERNAME:devuser}
-    password: ${SPRING_DATASOURCE_PASSWORD:REPLACE_ME_LOCAL_DB_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/combotto}
+    username: ${SPRING_DATASOURCE_USERNAME:combotto}
+    password: ${SPRING_DATASOURCE_PASSWORD:combotto}
 
   jpa:
     hibernate:
       ddl-auto: validate
     properties:
       hibernate:
+        default_schema: control_plane
         format_sql: true
     open-in-view: false
 
   flyway:
     enabled: true
     locations: classpath:migration
+    default-schema: control_plane
+    schemas: control_plane
+    create-schemas: true
 
   jackson:
     datatype:
@@ -60,4 +64,4 @@ spring:
         WRITE_DATES_AS_TIMESTAMPS: false
 
 server:
-  port: 8080
+  port: 8082
